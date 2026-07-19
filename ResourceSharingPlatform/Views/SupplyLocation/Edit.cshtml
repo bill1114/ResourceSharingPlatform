@@ -1,0 +1,94 @@
+﻿@model ResourceSharingPlatform.Models.SupplyLocation
+
+@{
+    ViewData["Title"] = "編輯據點";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-pencil-square"></i> 編輯據點</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Edit">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <input type="hidden" asp-for="IsActive" />
+
+                        <div class="mb-3">
+                            <label asp-for="LocationName" class="form-label">據點名稱 <span class="text-danger">*</span></label>
+                            <input asp-for="LocationName" class="form-control" />
+                            <span asp-validation-for="LocationName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label">地址</label>
+                            <input asp-for="Address" class="form-control" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Latitude" class="form-label">緯度</label>
+                                    <input asp-for="Latitude" class="form-control" />
+                                    <span asp-validation-for="Latitude" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Longitude" class="form-label">經度</label>
+                                    <input asp-for="Longitude" class="form-control" />
+                                    <span asp-validation-for="Longitude" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="ContactPerson" class="form-label">聯絡人</label>
+                                    <input asp-for="ContactPerson" class="form-control" />
+                                    <span asp-validation-for="ContactPerson" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Phone" class="form-label">聯絡電話</label>
+                                    <input asp-for="Phone" class="form-control" />
+                                    <span asp-validation-for="Phone" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 儲存變更
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回列表
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-warning">
+                <h6><i class="bi bi-exclamation-triangle"></i> 注意事項</h6>
+                <ul class="mb-0">
+                    <li>修改經緯度會影響地圖顯示位置</li>
+                    <li>請確認資料正確後再儲存</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

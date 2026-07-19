@@ -1,0 +1,109 @@
+@model IEnumerable<ResourceSharingPlatform.Models.SupplyTransferLog>
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "物資轉移紀錄";
+    var canOperate = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Cadre);
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list-ul"></i> 物資轉移紀錄</h2>
+        @if (canOperate)
+        {
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 新增轉移
+            </a>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 目前沒有轉移紀錄。
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>轉移時間</th>
+                                <th>物資名稱</th>
+                                <th>來源據點</th>
+                                <th><i class="bi bi-arrow-right"></i></th>
+                                <th>目標據點</th>
+                                <th>轉移數量</th>
+                                <th>狀態</th>
+                                <th>操作人員</th>
+                                <th>備註</th>
+                                @if (canOperate)
+                                {
+                                    <th>動作</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model)
+                            {
+                                <tr>
+                                    <td>@log.TransferTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td><strong>@log.SupplyItem?.ItemName</strong></td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-building"></i> @log.FromLocation?.LocationName
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <i class="bi bi-arrow-right-circle text-primary"></i>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-building"></i> @log.ToLocation?.LocationName
+                                        </span>
+                                    </td>
+                                    <td class="text-end"><strong>@log.TransferQuantity</strong> @log.SupplyItem?.Unit</td>
+                                    <td>
+                                        <span class="badge @TransferStatuses.ToBadgeClass(log.Status)">@TransferStatuses.ToDisplayName(log.Status)</span>
+                                        @if (log.Status != TransferStatuses.Pending && log.ConfirmedBy != null)
+                                        {
+                                            <div class="small text-muted">@log.ConfirmedBy @log.ConfirmedAt?.ToString("yyyy-MM-dd HH:mm")</div>
+                                        }
+                                    </td>
+                                    <td>@log.Operator</td>
+                                    <td>@log.Remark</td>
+                                    @if (canOperate)
+                                    {
+                                        <td>
+                                            @if (log.Status == TransferStatuses.Pending)
+                                            {
+                                                <form asp-action="ConfirmReceipt" asp-route-id="@log.Id" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-success" title="確認送達">
+                                                        <i class="bi bi-check-lg"></i> 確認送達
+                                                    </button>
+                                                </form>
+                                                <form asp-action="CancelTransfer" asp-route-id="@log.Id" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="取消轉移">
+                                                        <i class="bi bi-x-lg"></i> 取消
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> 顯示最近 100 筆轉移紀錄，即使是同一批送出的物資，也可以分別逐筆確認送達或取消
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</div>

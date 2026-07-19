@@ -1,0 +1,155 @@
+﻿@model ResourceSharingPlatform.Models.SupplyLocation
+
+@{
+    ViewData["Title"] = "據點詳細資料";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-building"></i> 據點詳細資料</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">@Model.LocationName</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3"><i class="bi bi-geo-alt"></i> 地址</dt>
+                        <dd class="col-sm-9">@Model.Address</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-person"></i> 聯絡人</dt>
+                        <dd class="col-sm-9">@Model.ContactPerson</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-telephone"></i> 聯絡電話</dt>
+                        <dd class="col-sm-9">@Model.Phone</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-map"></i> 緯度</dt>
+                        <dd class="col-sm-9">@Model.Latitude</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-map"></i> 經度</dt>
+                        <dd class="col-sm-9">@Model.Longitude</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-calendar-plus"></i> 建立時間</dt>
+                        <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <dt class="col-sm-3"><i class="bi bi-calendar-check"></i> 最後更新</dt>
+                            <dd class="col-sm-9">@Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")</dd>
+                        }
+
+                        <dt class="col-sm-3"><i class="bi bi-toggle-on"></i> 狀態</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">啟用中</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">已停用</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            @if (Model.SupplyItems != null && Model.SupplyItems.Any())
+            {
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-box"></i> 此據點物資列表 (@Model.SupplyItems.Count 項)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>種類</th>
+                                        <th>物資名稱</th>
+                                        <th>數量</th>
+                                        <th>有效期限</th>
+                                        <th>安全庫存</th>
+                                        <th>狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.SupplyItems.Where(x => x.IsActive))
+                                    {
+                                        <tr>
+                                            <td>@item.Category</td>
+                                            <td><strong>@item.ItemName</strong></td>
+                                            <td>@item.Quantity @item.Unit</td>
+                                            <td>
+                                                @if (item.ExpirationDate.HasValue)
+                                                {
+                                                    @item.ExpirationDate.Value.ToString("yyyy-MM-dd")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">無期限</span>
+                                                }
+                                            </td>
+                                            <td>@item.SafetyStock @item.Unit</td>
+                                            <td>
+                                                <span class="badge @item.GetStatusBadgeClass()">
+                                                    @item.GetStatus()
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-info-circle"></i> 此據點目前沒有物資
+                </div>
+            }
+
+            <div class="mt-4">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> 編輯
+                </a>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> 返回列表
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="bi bi-map"></i> 地圖位置</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <a href="https://www.google.com/maps?q=@Model.Latitude,@Model.Longitude" target="_blank" class="btn btn-primary w-100">
+                            <i class="bi bi-pin-map"></i> 在 Google Maps 開啟
+                        </a>
+                    </div>
+                </div>
+            }
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-gear"></i> 快速操作</h6>
+                </div>
+                <div class="card-body">
+                    <a asp-controller="SupplyItem" asp-action="Index" asp-route-locationId="@Model.Id" class="btn btn-info w-100 mb-2">
+                        <i class="bi bi-search"></i> 查看此據點所有物資
+                    </a>
+                    <a asp-controller="SupplyItem" asp-action="Create" class="btn btn-success w-100">
+                        <i class="bi bi-plus-circle"></i> 新增物資到此據點
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,78 @@
+﻿@model IEnumerable<ResourceSharingPlatform.Models.SupplyLocation>
+
+@{
+    ViewData["Title"] = "據點管理";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-buildings"></i> 據點管理</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 新增據點
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 目前沒有據點資料，請<a asp-action="Create" class="alert-link">新增據點</a>。
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>據點名稱</th>
+                                <th>地址</th>
+                                <th>聯絡人</th>
+                                <th>聯絡電話</th>
+                                <th>經緯度</th>
+                                <th>建立時間</th>
+                                <th width="200">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td><strong>@item.LocationName</strong></td>
+                                    <td>@item.Address</td>
+                                    <td>@item.ContactPerson</td>
+                                    <td>@item.Phone</td>
+                                    <td>
+                                        @if (item.Latitude.HasValue && item.Longitude.HasValue)
+                                        {
+                                            <small class="text-muted">@item.Latitude, @item.Longitude</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">未設定</span>
+                                        }
+                                    </td>
+                                    <td>@item.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info" title="詳細資料">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning" title="編輯">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger" title="刪除">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

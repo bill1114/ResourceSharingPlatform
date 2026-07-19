@@ -1,0 +1,106 @@
+@model IEnumerable<ResourceSharingPlatform.Models.SupplyOutboundLog>
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "出庫紀錄";
+    var expiringItems = ViewBag.ExpiringItems as List<SupplyItem>;
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list-ul"></i> 物資出庫紀錄</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 新增出庫
+        </a>
+    </div>
+
+    @if (expiringItems != null && expiringItems.Any())
+    {
+        <div class="alert alert-warning">
+            <h6><i class="bi bi-exclamation-triangle-fill"></i> 即期／已過期物資，建議優先出庫（共 @expiringItems.Count 項）</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>物資</th>
+                            <th>據點</th>
+                            <th>庫存</th>
+                            <th>有效期限</th>
+                            <th>狀態</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ex in expiringItems)
+                        {
+                            <tr>
+                                <td>@ex.ItemName</td>
+                                <td>@ex.Location?.LocationName</td>
+                                <td>@ex.Quantity @ex.Unit</td>
+                                <td>@ex.ExpirationDate?.ToString("yyyy-MM-dd")</td>
+                                <td><span class="badge @ex.GetStatusBadgeClass()">@ex.GetStatus()</span></td>
+                                <td>
+                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" class="btn btn-sm btn-outline-warning">選擇出庫</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 目前沒有出庫紀錄，請<a asp-action="Create" class="alert-link">建立物資出庫</a>。
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>出庫時間</th>
+                                <th>物資名稱</th>
+                                <th>來源據點</th>
+                                <th>出庫數量</th>
+                                <th>領用人</th>
+                                <th>聯絡方式</th>
+                                <th>操作人員</th>
+                                <th>備註</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model)
+                            {
+                                <tr>
+                                    <td>@log.OutboundTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td><strong>@log.SupplyItem?.ItemName</strong></td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-building"></i> @log.Location?.LocationName
+                                        </span>
+                                    </td>
+                                    <td class="text-end"><strong>@log.OutboundQuantity</strong> @log.SupplyItem?.Unit</td>
+                                    <td>@log.RecipientName</td>
+                                    <td>@log.RecipientContact</td>
+                                    <td>@log.Operator</td>
+                                    <td>@log.Remark</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> 顯示最近 100 筆出庫紀錄
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</div>

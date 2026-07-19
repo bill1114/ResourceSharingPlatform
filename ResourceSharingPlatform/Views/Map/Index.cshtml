@@ -1,0 +1,80 @@
+﻿@{
+    ViewData["Title"] = "據點地圖總覽";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-3">
+        <i class="bi bi-geo-alt-fill"></i> 據點地圖總覽
+    </h2>
+    <div id="map" style="height: 700px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Taiwan (Yunlin County)
+        const map = L.map('map').setView([23.7078, 120.5439], 11);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Fetch locations data from API
+        fetch('/Map/GetLocations')
+            .then(response => response.json())
+            .then(data => {
+                if (data.length === 0) {
+                    alert('目前沒有據點資料可顯示');
+                    return;
+                }
+
+                data.forEach(location => {
+                    // Determine marker color based on status
+                    let markerColor = 'blue';
+                    if (location.lowStockCount > 0) {
+                        markerColor = 'red';
+                    } else if (location.expiringSoonCount > 0) {
+                        markerColor = 'orange';
+                    }
+
+                    // Create custom icon
+                    const customIcon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background-color: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+
+                    // Create popup content with Bootstrap styling
+                    const popupContent = `
+                        <div style="min-width: 250px;">
+                            <h5 class="mb-2"><i class="bi bi-building"></i> ${location.locationName}</h5>
+                            <hr>
+                            <p class="mb-1"><i class="bi bi-geo-alt"></i> <strong>地址：</strong>${location.address ?? '未設定'}</p>
+                            <p class="mb-1"><i class="bi bi-box"></i> <strong>物資種類：</strong>${location.itemTypeCount} 種</p>
+                            <p class="mb-1"><i class="bi bi-stack"></i> <strong>總物資數量：</strong>${location.totalQuantity}</p>
+                            ${location.lowStockCount > 0 ? `<p class="mb-1 text-danger"><i class="bi bi-exclamation-triangle-fill"></i> <strong>低庫存項目：</strong>${location.lowStockCount}</p>` : ''}
+                            ${location.expiringSoonCount > 0 ? `<p class="mb-1 text-warning"><i class="bi bi-clock-fill"></i> <strong>即期物資：</strong>${location.expiringSoonCount}</p>` : ''}
+                            <hr>
+                            <a href="/SupplyItem?locationId=${location.locationId}" class="btn btn-sm btn-primary w-100">
+                                <i class="bi bi-search"></i> 查看物資明細
+                            </a>
+                        </div>
+                    `;
+
+                    // Add marker to map
+                    L.marker([location.latitude, location.longitude], { icon: customIcon })
+                        .addTo(map)
+                        .bindPopup(popupContent);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching locations:', error);
+                alert('載入據點資料時發生錯誤');
+            });
+    </script>
+}

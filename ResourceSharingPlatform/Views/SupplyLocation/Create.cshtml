@@ -1,0 +1,92 @@
+﻿@model ResourceSharingPlatform.Models.SupplyLocation
+
+@{
+    ViewData["Title"] = "新增據點";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-building-add"></i> 新增據點</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="LocationName" class="form-label">據點名稱 <span class="text-danger">*</span></label>
+                            <input asp-for="LocationName" class="form-control" placeholder="例如：第一物資據點" />
+                            <span asp-validation-for="LocationName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label">地址</label>
+                            <input asp-for="Address" class="form-control" placeholder="例如：雲林縣斗六市" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Latitude" class="form-label">緯度</label>
+                                    <input asp-for="Latitude" class="form-control" placeholder="例如：23.7078" />
+                                    <span asp-validation-for="Latitude" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Longitude" class="form-label">經度</label>
+                                    <input asp-for="Longitude" class="form-control" placeholder="例如：120.5439" />
+                                    <span asp-validation-for="Longitude" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="ContactPerson" class="form-label">聯絡人</label>
+                                    <input asp-for="ContactPerson" class="form-control" placeholder="例如：王先生" />
+                                    <span asp-validation-for="ContactPerson" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Phone" class="form-label">聯絡電話</label>
+                                    <input asp-for="Phone" class="form-control" placeholder="例如：05-0000001" />
+                                    <span asp-validation-for="Phone" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 確認新增
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回列表
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> 填寫說明</h6>
+                <ul class="mb-0">
+                    <li>據點名稱為必填欄位</li>
+                    <li>經緯度用於地圖顯示</li>
+                    <li>可至 <a href="https://www.google.com/maps" target="_blank">Google Maps</a> 查詢經緯度</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,23 @@
+# Visual Studio / build artifacts
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Runtime uploads (user-generated data, not source)
+ResourceSharingPlatform/wwwroot/uploads/
+
+# Logs / temp
+*.log
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Local tooling state (not part of the app)
+.claude/
+

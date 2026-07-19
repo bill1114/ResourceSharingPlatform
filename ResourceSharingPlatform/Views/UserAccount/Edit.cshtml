@@ -1,0 +1,72 @@
+@model ResourceSharingPlatform.Models.ViewModels.UserAccountViewModel
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "編輯帳號";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-person-gear"></i> 編輯帳號</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Edit">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="UserName" class="form-label">帳號 <span class="text-danger">*</span></label>
+                            <input asp-for="UserName" class="form-control" />
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">密碼</label>
+                            <input asp-for="Password" class="form-control" placeholder="留空表示不變更密碼" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                            <div class="form-text">若不需要變更密碼，請留空。</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DisplayName" class="form-label">顯示名稱</label>
+                            <input asp-for="DisplayName" class="form-control" />
+                            <span asp-validation-for="DisplayName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="RoleName" class="form-label">角色 <span class="text-danger">*</span></label>
+                            <select asp-for="RoleName" class="form-select">
+                                @foreach (var role in Roles.All)
+                                {
+                                    <option value="@role">@Roles.ToDisplayName(role)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="RoleName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label asp-for="IsActive" class="form-check-label">啟用此帳號</label>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 儲存變更
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回列表
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

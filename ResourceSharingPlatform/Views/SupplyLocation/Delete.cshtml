@@ -1,0 +1,61 @@
+﻿@model ResourceSharingPlatform.Models.SupplyLocation
+
+@{
+    ViewData["Title"] = "刪除據點";
+}
+
+<div class="container mt-4">
+    <h2 class="text-danger"><i class="bi bi-trash"></i> 刪除據點</h2>
+    <hr />
+
+    <div class="alert alert-danger">
+        <h5><i class="bi bi-exclamation-triangle-fill"></i> 警告</h5>
+        <p class="mb-0">您確定要刪除此據點嗎？此操作會將據點設定為停用狀態。</p>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">據點資訊</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">據點名稱</dt>
+                <dd class="col-sm-9"><strong>@Model.LocationName</strong></dd>
+
+                <dt class="col-sm-3">地址</dt>
+                <dd class="col-sm-9">@Model.Address</dd>
+
+                <dt class="col-sm-3">聯絡人</dt>
+                <dd class="col-sm-9">@Model.ContactPerson</dd>
+
+                <dt class="col-sm-3">聯絡電話</dt>
+                <dd class="col-sm-9">@Model.Phone</dd>
+
+                <dt class="col-sm-3">經緯度</dt>
+                <dd class="col-sm-9">
+                    @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                    {
+                        <text>@Model.Latitude, @Model.Longitude</text>
+                    }
+                    else
+                    {
+                        <span class="text-muted">未設定</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">建立時間</dt>
+                <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <form asp-action="Delete" class="mt-4">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-check-circle"></i> 確認刪除
+        </button>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> 取消
+        </a>
+    </form>
+</div>

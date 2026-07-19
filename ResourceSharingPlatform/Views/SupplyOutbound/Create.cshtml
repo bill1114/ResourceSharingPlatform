@@ -1,0 +1,144 @@
+@model ResourceSharingPlatform.Models.ViewModels.OutboundViewModel
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "物資出庫";
+    var expiringItems = ViewBag.ExpiringItems as List<SupplyItem>;
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-box-arrow-up"></i> 物資出庫（發放）</h2>
+    <hr />
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (expiringItems != null && expiringItems.Any())
+    {
+        <div class="alert alert-warning">
+            <h6><i class="bi bi-exclamation-triangle-fill"></i> 即期／已過期物資，建議優先出庫</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>物資</th>
+                            <th>據點</th>
+                            <th>庫存</th>
+                            <th>有效期限</th>
+                            <th>狀態</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ex in expiringItems)
+                        {
+                            <tr>
+                                <td>@ex.ItemName</td>
+                                <td>@ex.Location?.LocationName</td>
+                                <td>@ex.Quantity @ex.Unit</td>
+                                <td>@ex.ExpirationDate?.ToString("yyyy-MM-dd")</td>
+                                <td><span class="badge @ex.GetStatusBadgeClass()">@ex.GetStatus()</span></td>
+                                <td>
+                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" class="btn btn-sm btn-outline-warning">選擇出庫</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="SupplyItemId" class="form-label">選擇物資 <span class="text-danger">*</span></label>
+                            <select asp-for="SupplyItemId" asp-items="ViewBag.Items" class="form-select">
+                                <option value="">請選擇物資</option>
+                            </select>
+                            <span asp-validation-for="SupplyItemId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="OutboundQuantity" class="form-label">出庫數量 <span class="text-danger">*</span></label>
+                            <input asp-for="OutboundQuantity" class="form-control" type="number" min="1" placeholder="請輸入出庫數量" />
+                            <span asp-validation-for="OutboundQuantity" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="RecipientName" class="form-label">領用人姓名 <span class="text-danger">*</span></label>
+                                    <input asp-for="RecipientName" class="form-control" placeholder="例如：陳先生" />
+                                    <span asp-validation-for="RecipientName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="RecipientContact" class="form-label">領用人聯絡方式</label>
+                                    <input asp-for="RecipientContact" class="form-control" placeholder="例如：手機或地址" />
+                                    <span asp-validation-for="RecipientContact" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">操作人員</label>
+                            <input class="form-control" value="@(User.FindFirst("DisplayName")?.Value ?? User.Identity?.Name)" disabled />
+                            <div class="form-text">系統會自動記錄目前登入帳號為操作人員。</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Remark" class="form-label">備註</label>
+                            <textarea asp-for="Remark" class="form-control" rows="3" placeholder="發放原因或其他說明"></textarea>
+                            <span asp-validation-for="Remark" class="text-danger"></span>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> 確認出庫
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回紀錄
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> 出庫說明</h6>
+                <ul class="mb-0">
+                    <li>出庫後物資會直接離開系統庫存，不會轉入其他據點</li>
+                    <li>系統會自動檢查庫存是否足夠</li>
+                    <li>所有出庫紀錄都會保留領用人與操作人員資訊</li>
+                </ul>
+            </div>
+
+            <div class="alert alert-warning">
+                <h6><i class="bi bi-exclamation-triangle"></i> 注意事項</h6>
+                <ul class="mb-0">
+                    <li>請確認出庫數量正確</li>
+                    <li>出庫後無法直接復原</li>
+                    <li>建議填寫領用人聯絡方式以利後續追蹤</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

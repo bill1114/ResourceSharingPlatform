@@ -1,0 +1,40 @@
+@model ResourceSharingPlatform.Models.UserAccount
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "停用帳號";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-person-dash"></i> 停用帳號</h2>
+    <hr />
+
+    <div class="alert alert-warning">
+        確定要停用這個帳號嗎？停用後該帳號將無法登入系統。
+    </div>
+
+    <div class="card shadow-sm" style="max-width: 500px;">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">帳號</dt>
+                <dd class="col-sm-8">@Model.UserName</dd>
+
+                <dt class="col-sm-4">顯示名稱</dt>
+                <dd class="col-sm-8">@Model.DisplayName</dd>
+
+                <dt class="col-sm-4">角色</dt>
+                <dd class="col-sm-8">@Roles.ToDisplayName(Model.RoleName)</dd>
+            </dl>
+        </div>
+    </div>
+
+    <form asp-action="Delete" class="mt-3">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-person-dash"></i> 確認停用
+        </button>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> 取消
+        </a>
+    </form>
+</div>

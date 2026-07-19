@@ -1,0 +1,214 @@
+@model ResourceSharingPlatform.Models.ViewModels.TransferBatchViewModel
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "物資轉移";
+    var itemOptions = (List<SupplyItem>)ViewBag.Items;
+}
+
+@functions {
+    string ItemOptionText(SupplyItem opt) => opt.ItemName + " (" + (opt.Location?.LocationName ?? "") + ") - 現有 " + opt.Quantity + " " + opt.Unit;
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-arrow-left-right"></i> 物資轉移</h2>
+    <hr />
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-9">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Create" method="post" id="transferForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="FromLocationId" class="form-label">來源據點 <span class="text-danger">*</span></label>
+                                    <select asp-for="FromLocationId" asp-items="ViewBag.Locations" class="form-select">
+                                        <option value="">請選擇來源據點</option>
+                                    </select>
+                                    <span asp-validation-for="FromLocationId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="ToLocationId" class="form-label">目標據點 <span class="text-danger">*</span></label>
+                                    <select asp-for="ToLocationId" asp-items="ViewBag.Locations" class="form-select">
+                                        <option value="">請選擇目標據點</option>
+                                    </select>
+                                    <span asp-validation-for="ToLocationId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="form-label">轉移物資 <span class="text-danger">*</span></label>
+                        <table class="table table-sm align-middle" id="linesTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60%;">物資</th>
+                                    <th style="width: 30%;">數量</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Lines.Count; i++)
+                                {
+                                    <tr>
+                                        <td>
+                                            <select name="Lines[@i].SupplyItemId" class="form-select line-item">
+                                                <option value="">請選擇物資</option>
+                                                @foreach (var opt in itemOptions)
+                                                {
+                                                    <option value="@opt.Id" data-location-id="@opt.LocationId" selected="@(opt.Id == Model.Lines[i].SupplyItemId)">@ItemOptionText(opt)</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="Lines[@i].TransferQuantity" class="form-control" min="1" placeholder="數量"
+                                                   value="@(Model.Lines[i].TransferQuantity == 0 ? "" : Model.Lines[i].TransferQuantity.ToString())" />
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-danger btn-sm remove-line">
+                                                <i class="bi bi-dash-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="addLineBtn">
+                            <i class="bi bi-plus-circle"></i> 新增一項物資
+                        </button>
+
+                        <div class="mb-3">
+                            <label asp-for="Operator" class="form-label">操作人員</label>
+                            <input asp-for="Operator" class="form-control" placeholder="留空則自動帶入目前登入帳號" />
+                            <span asp-validation-for="Operator" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Remark" class="form-label">備註</label>
+                            <textarea asp-for="Remark" class="form-control" rows="3" placeholder="轉移原因或其他說明"></textarea>
+                            <span asp-validation-for="Remark" class="text-danger"></span>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> 建立轉移
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回紀錄
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> 轉移說明</h6>
+                <ul class="mb-0">
+                    <li>可一次新增多筆物資</li>
+                    <li>來源據點與目標據點不可相同</li>
+                    <li>系統會自動檢查來源數量是否足夠</li>
+                </ul>
+            </div>
+
+            <div class="alert alert-warning">
+                <h6><i class="bi bi-exclamation-triangle"></i> 到貨確認</h6>
+                <ul class="mb-0">
+                    <li>建立轉移後會先扣除來源據點庫存</li>
+                    <li>目標據點庫存要等對方在「轉移紀錄」點擊「確認送達」才會增加</li>
+                    <li>如果東西沒送達，可以在紀錄頁「取消」，數量會退回來源據點</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="lineTemplate">
+    <tr>
+        <td>
+            <select name="Lines[__INDEX__].SupplyItemId" class="form-select line-item">
+                <option value="">請選擇物資</option>
+                @foreach (var opt in itemOptions)
+                {
+                    <option value="@opt.Id" data-location-id="@opt.LocationId">@ItemOptionText(opt)</option>
+                }
+            </select>
+        </td>
+        <td>
+            <input type="number" name="Lines[__INDEX__].TransferQuantity" class="form-control" min="1" placeholder="數量" />
+        </td>
+        <td>
+            <button type="button" class="btn btn-outline-danger btn-sm remove-line">
+                <i class="bi bi-dash-circle"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        (function () {
+            var nextIndex = @Model.Lines.Count;
+            var tbody = document.querySelector('#linesTable tbody');
+            var template = document.getElementById('lineTemplate');
+            var fromSelect = document.getElementById('FromLocationId');
+
+            function filterRow(select) {
+                var fromVal = fromSelect.value;
+                var currentValid = false;
+                select.querySelectorAll('option[data-location-id]').forEach(function (opt) {
+                    var show = !fromVal || opt.getAttribute('data-location-id') === fromVal;
+                    opt.style.display = show ? '' : 'none';
+                    if (show && opt.value === select.value) {
+                        currentValid = true;
+                    }
+                });
+                if (!currentValid) {
+                    select.value = '';
+                }
+            }
+
+            function filterAllRows() {
+                tbody.querySelectorAll('.line-item').forEach(filterRow);
+            }
+
+            fromSelect.addEventListener('change', filterAllRows);
+            filterAllRows();
+
+            document.getElementById('addLineBtn').addEventListener('click', function () {
+                var html = template.innerHTML.replaceAll('__INDEX__', nextIndex);
+                var wrapper = document.createElement('tbody');
+                wrapper.innerHTML = html;
+                var newRow = wrapper.firstElementChild;
+                tbody.appendChild(newRow);
+                nextIndex++;
+
+                var newSelect = newRow.querySelector('.line-item');
+                if (newSelect) {
+                    filterRow(newSelect);
+                }
+            });
+
+            tbody.addEventListener('click', function (e) {
+                var btn = e.target.closest('.remove-line');
+                if (!btn) return;
+                if (tbody.querySelectorAll('tr').length <= 1) return;
+                btn.closest('tr').remove();
+            });
+        })();
+    </script>
+}

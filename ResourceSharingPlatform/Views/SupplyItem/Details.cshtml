@@ -1,0 +1,142 @@
+﻿@model ResourceSharingPlatform.Models.SupplyItem
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "物資詳細資料";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-box"></i> 物資詳細資料</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header" style="background-color: @(Model.GetStatus() == "低庫存" ? "#dc3545" : Model.GetStatus() == "即將過期" ? "#ffc107" : "#0d6efd");" class="text-white">
+                    <h5 class="mb-0 text-white">@Model.ItemName</h5>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ImagePath))
+                    {
+                        <img src="@Model.ImagePath" alt="@Model.ItemName" style="max-height: 220px;" class="rounded border mb-3" />
+                    }
+                    <dl class="row">
+                        <dt class="col-sm-3"><i class="bi bi-tag"></i> 種類</dt>
+                        <dd class="col-sm-9"><span class="badge bg-secondary">@Model.Category</span></dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-rulers"></i> 規格</dt>
+                        <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.Specification) ? "-" : Model.Specification)</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-collection"></i> 分類</dt>
+                        <dd class="col-sm-9"><span class="badge @StockTypes.ToBadgeClass(Model.StockType)">@StockTypes.ToDisplayName(Model.StockType)</span></dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-stack"></i> 目前數量</dt>
+                        <dd class="col-sm-9"><strong class="fs-4">@Model.Quantity</strong> @Model.Unit</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-speedometer"></i> 安全庫存</dt>
+                        <dd class="col-sm-9">@Model.SafetyStock @Model.Unit</dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-calendar-event"></i> 有效期限</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.ExpirationDate.HasValue)
+                            {
+                                @Model.ExpirationDate.Value.ToString("yyyy-MM-dd")
+                                @if (Model.ExpirationDate < DateTime.Today)
+                                {
+                                    <span class="badge bg-dark ms-2">已過期</span>
+                                }
+                                else if (Model.ExpirationDate <= DateTime.Today.AddDays(30))
+                                {
+                                    <span class="badge bg-warning text-dark ms-2">即將過期</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">無期限</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-building"></i> 所在據點</dt>
+                        <dd class="col-sm-9">
+                            <a asp-controller="SupplyLocation" asp-action="Details" asp-route-id="@Model.LocationId">
+                                @Model.Location?.LocationName
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-3"><i class="bi bi-info-circle"></i> 狀態</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge @Model.GetStatusBadgeClass() fs-6">
+                                @Model.GetStatus()
+                            </span>
+                        </dd>
+
+                        @if (!string.IsNullOrEmpty(Model.Remark))
+                        {
+                            <dt class="col-sm-3"><i class="bi bi-chat-left-text"></i> 備註</dt>
+                            <dd class="col-sm-9">@Model.Remark</dd>
+                        }
+
+                        <dt class="col-sm-3"><i class="bi bi-calendar-plus"></i> 建立時間</dt>
+                        <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <dt class="col-sm-3"><i class="bi bi-calendar-check"></i> 最後更新</dt>
+                            <dd class="col-sm-9">@Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> 編輯
+                </a>
+                <a asp-controller="SupplyTransfer" asp-action="Create" asp-route-supplyItemId="@Model.Id" class="btn btn-primary">
+                    <i class="bi bi-arrow-left-right"></i> 轉移此物資
+                </a>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> 返回列表
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            @if (Model.Quantity <= Model.SafetyStock)
+            {
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-exclamation-triangle-fill"></i> 低庫存警告</h6>
+                    <p class="mb-0">目前數量已低於安全庫存，請盡快補充！</p>
+                </div>
+            }
+            else if (Model.ExpirationDate.HasValue && Model.ExpirationDate <= DateTime.Today.AddDays(30))
+            {
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-clock-fill"></i> 即將過期提醒</h6>
+                    <p class="mb-0">此物資將在 30 天內過期，請注意使用！</p>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    <h6><i class="bi bi-check-circle-fill"></i> 狀態正常</h6>
+                    <p class="mb-0">庫存充足且尚未接近有效期限</p>
+                </div>
+            }
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-gear"></i> 快速操作</h6>
+                </div>
+                <div class="card-body">
+                    <a asp-controller="SupplyLocation" asp-action="Details" asp-route-id="@Model.LocationId" class="btn btn-info w-100 mb-2">
+                        <i class="bi bi-building"></i> 查看所在據點
+                    </a>
+                    <a asp-controller="SupplyItem" asp-action="Index" asp-route-locationId="@Model.LocationId" class="btn btn-success w-100">
+                        <i class="bi bi-search"></i> 查看此據點其他物資
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

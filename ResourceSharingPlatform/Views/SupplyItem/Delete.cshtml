@@ -1,0 +1,67 @@
+﻿@model ResourceSharingPlatform.Models.SupplyItem
+
+@{
+    ViewData["Title"] = "刪除物資";
+}
+
+<div class="container mt-4">
+    <h2 class="text-danger"><i class="bi bi-trash"></i> 刪除物資</h2>
+    <hr />
+
+    <div class="alert alert-danger">
+        <h5><i class="bi bi-exclamation-triangle-fill"></i> 警告</h5>
+        <p class="mb-0">您確定要刪除此物資嗎？此操作會將物資設定為停用狀態。</p>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">物資資訊</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">種類</dt>
+                <dd class="col-sm-9">@Model.Category</dd>
+
+                <dt class="col-sm-3">物資名稱</dt>
+                <dd class="col-sm-9"><strong>@Model.ItemName</strong></dd>
+
+                <dt class="col-sm-3">目前數量</dt>
+                <dd class="col-sm-9">@Model.Quantity @Model.Unit</dd>
+
+                <dt class="col-sm-3">有效期限</dt>
+                <dd class="col-sm-9">
+                    @if (Model.ExpirationDate.HasValue)
+                    {
+                        @Model.ExpirationDate.Value.ToString("yyyy-MM-dd")
+                    }
+                    else
+                    {
+                        <span class="text-muted">無期限</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">所在據點</dt>
+                <dd class="col-sm-9">@Model.Location?.LocationName</dd>
+
+                <dt class="col-sm-3">安全庫存</dt>
+                <dd class="col-sm-9">@Model.SafetyStock @Model.Unit</dd>
+
+                @if (!string.IsNullOrEmpty(Model.Remark))
+                {
+                    <dt class="col-sm-3">備註</dt>
+                    <dd class="col-sm-9">@Model.Remark</dd>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <form asp-action="Delete" class="mt-4">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-check-circle"></i> 確認刪除
+        </button>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> 取消
+        </a>
+    </form>
+</div>

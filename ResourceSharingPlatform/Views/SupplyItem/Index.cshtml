@@ -1,0 +1,163 @@
+@model IEnumerable<ResourceSharingPlatform.Models.SupplyItem>
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "物資管理";
+    var locationId = ViewBag.Locations?.SelectedValue as int?;
+    var selectedCategory = ViewBag.SelectedCategory as string;
+    var selectedStockType = ViewBag.SelectedStockType as string;
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-box"></i> 物資管理</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 新增物資
+        </a>
+    </div>
+
+    <!-- 分類快速切換 -->
+    <div class="btn-group mb-3" role="group">
+        <a asp-action="Index" asp-route-locationId="@locationId" asp-route-category="@selectedCategory"
+           class="btn btn-sm @(string.IsNullOrEmpty(selectedStockType) ? "btn-dark" : "btn-outline-dark")">全部</a>
+        @foreach (var st in StockTypes.All)
+        {
+            <a asp-action="Index" asp-route-locationId="@locationId" asp-route-category="@selectedCategory" asp-route-stockType="@st"
+               class="btn btn-sm @(selectedStockType == st ? "btn-dark" : "btn-outline-dark")">@StockTypes.ToDisplayName(st)</a>
+        }
+    </div>
+
+    <!-- 篩選器 -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-funnel"></i> 篩選條件
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <input type="hidden" name="stockType" value="@selectedStockType" />
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">據點</label>
+                        <select name="locationId" class="form-select" asp-items="ViewBag.Locations">
+                            <option value="">全部據點</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">種類</label>
+                        <select name="category" class="form-select">
+                            <option value="">全部種類</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                foreach (var cat in (List<string>)ViewBag.Categories)
+                                {
+                                    <option value="@cat" selected="@(cat == selectedCategory)">@cat</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> 搜尋
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> 重設
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 沒有符合條件的物資，請<a asp-action="Create" class="alert-link">新增物資</a>或調整篩選條件。
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>圖片</th>
+                                <th>種類</th>
+                                <th>物資名稱</th>
+                                <th>規格</th>
+                                <th>分類</th>
+                                <th>數量</th>
+                                <th>單位</th>
+                                <th>有效期限</th>
+                                <th>目前據點</th>
+                                <th>安全庫存</th>
+                                <th>狀態</th>
+                                <th width="200">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(item.ImagePath))
+                                        {
+                                            <img src="@item.ImagePath" alt="@item.ItemName" style="width:48px;height:48px;object-fit:cover;" class="rounded border" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-image text-muted" style="font-size: 1.5rem;"></i>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@item.Category</span></td>
+                                    <td><strong>@item.ItemName</strong></td>
+                                    <td>@item.Specification</td>
+                                    <td><span class="badge @StockTypes.ToBadgeClass(item.StockType)">@StockTypes.ToDisplayName(item.StockType)</span></td>
+                                    <td class="text-end"><strong>@item.Quantity</strong></td>
+                                    <td>@item.Unit</td>
+                                    <td>
+                                        @if (item.ExpirationDate.HasValue)
+                                        {
+                                            @item.ExpirationDate.Value.ToString("yyyy-MM-dd")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">無期限</span>
+                                        }
+                                    </td>
+                                    <td><i class="bi bi-building"></i> @item.Location?.LocationName</td>
+                                    <td class="text-end">@item.SafetyStock</td>
+                                    <td>
+                                        <span class="badge @item.GetStatusBadgeClass()">
+                                            @item.GetStatus()
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info" title="詳細資料">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning" title="編輯">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-controller="SupplyTransfer" asp-action="Create" asp-route-supplyItemId="@item.Id" class="btn btn-sm btn-primary" title="轉移">
+                                                <i class="bi bi-arrow-left-right"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger" title="刪除">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <p class="text-muted mb-0">共 @Model.Count() 筆物資</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
