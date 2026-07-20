@@ -64,6 +64,12 @@ namespace ResourceSharingPlatform.Data
                 .HasForeignKey(x => x.LocationId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<UserAccount>()
+                .HasOne(x => x.Location)
+                .WithMany()
+                .HasForeignKey(x => x.LocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Configure decimal precision
             modelBuilder.Entity<SupplyLocation>()
                 .Property(x => x.Latitude)

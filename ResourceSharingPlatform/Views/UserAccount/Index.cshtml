@@ -21,6 +21,7 @@
                         <th>帳號</th>
                         <th>顯示名稱</th>
                         <th>角色</th>
+                        <th>所屬據點</th>
                         <th>狀態</th>
                         <th>建立時間</th>
                         <th>操作</th>
@@ -33,6 +34,16 @@
                             <td>@user.UserName</td>
                             <td>@user.DisplayName</td>
                             <td><span class="badge bg-secondary">@Roles.ToDisplayName(user.RoleName)</span></td>
+                            <td>
+                                @if (user.Location != null)
+                                {
+                                    <span class="badge" style="@LocationColors.Style(user.LocationId!.Value)"><i class="bi bi-building"></i> @user.Location.LocationName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">未指定</span>
+                                }
+                            </td>
                             <td>
                                 @if (user.IsActive)
                                 {

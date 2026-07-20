@@ -80,9 +80,22 @@ namespace ResourceSharingPlatform.Controllers
         // POST: SupplyTransfer/ConfirmReceipt/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = Roles.AdminAndCadre)]
+        [Authorize]
         public async Task<IActionResult> ConfirmReceipt(int id)
         {
+            var log = await _context.SupplyTransferLogs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            if (log == null)
+            {
+                TempData["ErrorMessage"] = "找不到轉移紀錄";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!CanResolveTransfer(log.ToLocationId))
+            {
+                TempData["ErrorMessage"] = "您沒有權限確認這筆轉移，僅目標據點人員或管理人員可操作";
+                return RedirectToAction(nameof(Index));
+            }
+
             var confirmedBy = User.FindFirstValue("DisplayName") ?? User.Identity?.Name;
             var result = await _transferService.ConfirmAsync(id, confirmedBy);
 
@@ -93,14 +106,38 @@ namespace ResourceSharingPlatform.Controllers
         // POST: SupplyTransfer/CancelTransfer/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = Roles.AdminAndCadre)]
+        [Authorize]
         public async Task<IActionResult> CancelTransfer(int id)
         {
+            var log = await _context.SupplyTransferLogs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            if (log == null)
+            {
+                TempData["ErrorMessage"] = "找不到轉移紀錄";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!CanResolveTransfer(log.ToLocationId))
+            {
+                TempData["ErrorMessage"] = "您沒有權限取消這筆轉移，僅目標據點人員或管理人員可操作";
+                return RedirectToAction(nameof(Index));
+            }
+
             var cancelledBy = User.FindFirstValue("DisplayName") ?? User.Identity?.Name;
             var result = await _transferService.CancelAsync(id, cancelledBy);
 
             TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
             return RedirectToAction(nameof(Index));
+        }
+
+        private bool CanResolveTransfer(int toLocationId)
+        {
+            if (User.IsInRole(Roles.Admin))
+            {
+                return true;
+            }
+
+            var locationClaim = User.FindFirstValue("LocationId");
+            return int.TryParse(locationClaim, out var userLocationId) && userLocationId == toLocationId;
         }
 
         private async Task PopulateDropdownsAsync()

@@ -63,6 +63,11 @@ namespace ResourceSharingPlatform.Controllers
                 new Claim("DisplayName", user.DisplayName ?? user.UserName)
             };
 
+            if (user.LocationId.HasValue)
+            {
+                claims.Add(new Claim("LocationId", user.LocationId.Value.ToString()));
+            }
+
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 

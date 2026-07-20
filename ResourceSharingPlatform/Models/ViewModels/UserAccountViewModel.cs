@@ -21,6 +21,8 @@ namespace ResourceSharingPlatform.Models.ViewModels
         [Required(ErrorMessage = "請選擇角色")]
         public string RoleName { get; set; } = Models.Roles.SocialWorker;
 
+        public int? LocationId { get; set; }
+
         public bool IsActive { get; set; } = true;
     }
 }

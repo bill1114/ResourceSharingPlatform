@@ -1319,7 +1319,23 @@ Pending（待確認）→ Confirmed（已確認）
 | 功能 | 管理人員 | 幹部 | 社工 |
 |---|---|---|---|
 | 物資／據點／轉移 新增/編輯/刪除 | ✓ | ✓ | 唯讀 |
-| 轉移「確認送達／取消」 | ✓ | ✓ | - |
+| 轉移「確認送達／取消」 | ✓（不限據點） | 僅限本人所屬據點 | 僅限本人所屬據點 |
 | 物資出庫（發放） | ✓ | ✓ | ✓ |
 | 帳號管理 | ✓ | - | - |
+
+### 30.5 帳號綁定據點（轉移確認的據點權限）
+
+`UserAccount` 新增 `LocationId`（可為 NULL）欄位，代表該帳號所屬的據點：
+
+```sql
+ALTER TABLE UserAccount ADD LocationId INT NULL;
+ALTER TABLE UserAccount ADD CONSTRAINT FK_UserAccount_SupplyLocation FOREIGN KEY (LocationId) REFERENCES SupplyLocation(Id);
+```
+
+- 管理人員在「帳號管理」新增/編輯帳號時可指定「所屬據點」（非必填）
+- 登入時，`LocationId` 會寫進登入 Cookie 的 Claims 裡（`AccountController.Login`）
+- 「物資轉移」的「確認送達」「取消」動作（`SupplyTransferController.ConfirmReceipt` / `CancelTransfer`）現在會檢查：
+  - 管理人員：不限據點，任何轉移都可以操作
+  - 幹部／社工：只有當自己的 `LocationId` 等於該筆轉移的**目標據點**時才能操作，否則會被伺服器端擋下（`CanResolveTransfer` 方法）
+- 尚未指定所屬據點的幹部／社工帳號，將無法確認或取消任何轉移，需由管理人員到「帳號管理」設定所屬據點
 

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
@@ -25,14 +26,16 @@ namespace ResourceSharingPlatform.Controllers
         public async Task<IActionResult> Index()
         {
             var users = await _context.UserAccounts
+                .Include(x => x.Location)
                 .OrderBy(x => x.UserName)
                 .ToListAsync();
             return View(users);
         }
 
         // GET: UserAccount/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            await PopulateLocationsAsync();
             return View(new UserAccountViewModel());
         }
 
@@ -58,6 +61,7 @@ namespace ResourceSharingPlatform.Controllers
                     UserName = model.UserName,
                     DisplayName = model.DisplayName,
                     RoleName = model.RoleName,
+                    LocationId = model.LocationId,
                     IsActive = model.IsActive,
                     CreatedAt = DateTime.Now
                 };
@@ -69,6 +73,7 @@ namespace ResourceSharingPlatform.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            await PopulateLocationsAsync();
             return View(model);
         }
 
@@ -80,12 +85,14 @@ namespace ResourceSharingPlatform.Controllers
             var user = await _context.UserAccounts.FindAsync(id);
             if (user == null) return NotFound();
 
+            await PopulateLocationsAsync();
             return View(new UserAccountViewModel
             {
                 Id = user.Id,
                 UserName = user.UserName,
                 DisplayName = user.DisplayName,
                 RoleName = user.RoleName,
+                LocationId = user.LocationId,
                 IsActive = user.IsActive
             });
         }
@@ -120,6 +127,7 @@ namespace ResourceSharingPlatform.Controllers
                 user.UserName = model.UserName;
                 user.DisplayName = model.DisplayName;
                 user.RoleName = model.RoleName;
+                user.LocationId = model.LocationId;
                 user.IsActive = model.IsActive;
                 user.UpdatedAt = DateTime.Now;
 
@@ -134,7 +142,17 @@ namespace ResourceSharingPlatform.Controllers
             }
 
             model.Id = id;
+            await PopulateLocationsAsync();
             return View(model);
+        }
+
+        private async Task PopulateLocationsAsync()
+        {
+            ViewBag.Locations = new SelectList(
+                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                "Id",
+                "LocationName"
+            );
         }
 
         // GET: UserAccount/Delete/5

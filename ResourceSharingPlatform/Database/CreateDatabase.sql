@@ -100,9 +100,12 @@ BEGIN
         PasswordHash NVARCHAR(300) NOT NULL,
         DisplayName NVARCHAR(50) NULL,
         RoleName NVARCHAR(30) NOT NULL DEFAULT 'User',
+        LocationId INT NULL,
         IsActive BIT NOT NULL DEFAULT 1,
         CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-        UpdatedAt DATETIME NULL
+        UpdatedAt DATETIME NULL,
+        CONSTRAINT FK_UserAccount_SupplyLocation FOREIGN KEY (LocationId)
+            REFERENCES SupplyLocation(Id)
     );
 END
 GO
@@ -176,6 +179,12 @@ BEGIN
     ALTER TABLE SupplyTransferLog ADD ConfirmedAt DATETIME NULL;
 END
 GO
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('UserAccount') AND name = 'LocationId')
+BEGIN
+    ALTER TABLE UserAccount ADD LocationId INT NULL;
+    ALTER TABLE UserAccount ADD CONSTRAINT FK_UserAccount_SupplyLocation FOREIGN KEY (LocationId) REFERENCES SupplyLocation(Id);
+END
+GO
 -- ================================================================
 -- 建立索引以提升查詢效能
 -- ================================================================
@@ -224,6 +233,12 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyTransferLog_BatchId')
 BEGIN
     CREATE INDEX IX_SupplyTransferLog_BatchId ON SupplyTransferLog(BatchId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_UserAccount_LocationId')
+BEGIN
+    CREATE INDEX IX_UserAccount_LocationId ON UserAccount(LocationId);
 END
 GO
 
