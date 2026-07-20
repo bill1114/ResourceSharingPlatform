@@ -39,7 +39,7 @@
                         {
                             <tr>
                                 <td>@ex.ItemName</td>
-                                <td>@ex.Location?.LocationName</td>
+                                <td><span class="badge" style="@LocationColors.Style(ex.LocationId)"><i class="bi bi-building"></i> @ex.Location?.LocationName</span></td>
                                 <td>@ex.Quantity @ex.Unit</td>
                                 <td>@ex.ExpirationDate?.ToString("yyyy-MM-dd")</td>
                                 <td><span class="badge @ex.GetStatusBadgeClass()">@ex.GetStatus()</span></td>

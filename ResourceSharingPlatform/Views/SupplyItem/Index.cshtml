@@ -126,7 +126,7 @@
                                             <span class="text-muted">無期限</span>
                                         }
                                     </td>
-                                    <td><i class="bi bi-building"></i> @item.Location?.LocationName</td>
+                                    <td><span class="badge" style="@LocationColors.Style(item.LocationId)"><i class="bi bi-building"></i> @item.Location?.LocationName</span></td>
                                     <td class="text-end">@item.SafetyStock</td>
                                     <td>
                                         <span class="badge @item.GetStatusBadgeClass()">

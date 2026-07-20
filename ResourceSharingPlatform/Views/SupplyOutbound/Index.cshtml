@@ -35,7 +35,7 @@
                         {
                             <tr>
                                 <td>@ex.ItemName</td>
-                                <td>@ex.Location?.LocationName</td>
+                                <td><span class="badge" style="@LocationColors.Style(ex.LocationId)"><i class="bi bi-building"></i> @ex.Location?.LocationName</span></td>
                                 <td>@ex.Quantity @ex.Unit</td>
                                 <td>@ex.ExpirationDate?.ToString("yyyy-MM-dd")</td>
                                 <td><span class="badge @ex.GetStatusBadgeClass()">@ex.GetStatus()</span></td>
@@ -81,7 +81,7 @@
                                     <td>@log.OutboundTime.ToString("yyyy-MM-dd HH:mm")</td>
                                     <td><strong>@log.SupplyItem?.ItemName</strong></td>
                                     <td>
-                                        <span class="badge bg-secondary">
+                                        <span class="badge" style="@LocationColors.Style(log.LocationId)">
                                             <i class="bi bi-building"></i> @log.Location?.LocationName
                                         </span>
                                     </td>
