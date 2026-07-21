@@ -1,12 +1,14 @@
 /**
  * ResourceSharingPlatform - Google Sheets backend (Apps Script Web App)
  *
- * Deploy this script bound to a Google Sheet that has 5 tabs matching the
- * SCHEMAS below (header row = column names, in order). See SETUP.md.
+ * Standalone script that talks to a Google Sheet (by Id) with 5 tabs matching
+ * the SCHEMAS below (header row = column names, in order). See SETUP.md.
  *
  * All requests are POSTed as JSON: { action, secret, payload }
  * The secret must match the "API_SECRET" Script Property.
  */
+
+var SPREADSHEET_ID = 'REPLACE_WITH_YOUR_SPREADSHEET_ID';
 
 var SCHEMAS = {
   SupplyLocation: [
@@ -92,7 +94,7 @@ function jsonOutput_(obj) {
 // ---------------------------------------------------------------------------
 
 function setupSheets() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   Object.keys(SCHEMAS).forEach(function (name) {
     var sheet = ss.getSheetByName(name);
     if (!sheet) {
@@ -104,10 +106,12 @@ function setupSheets() {
       sheet.setFrozenRows(1);
     }
   });
-  var defaultSheet = ss.getSheetByName('Sheet1');
-  if (defaultSheet && defaultSheet.getLastRow() === 0 && defaultSheet.getLastColumn() <= 1) {
-    ss.deleteSheet(defaultSheet);
-  }
+  ['Sheet1', '工作表1'].forEach(function (name) {
+    var defaultSheet = ss.getSheetByName(name);
+    if (defaultSheet && defaultSheet.getLastRow() === 0 && defaultSheet.getLastColumn() <= 1) {
+      ss.deleteSheet(defaultSheet);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -115,7 +119,7 @@ function setupSheets() {
 // ---------------------------------------------------------------------------
 
 function sheet_(name) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name);
   if (!sheet) {
     throw new Error('Sheet not found: ' + name);
   }
@@ -249,6 +253,12 @@ function withLock_(fn) {
 var ACTIONS = {
   ping: function () {
     return { success: true, message: 'pong' };
+  },
+  // Callable over HTTP so the one-time sheet setup can be triggered without
+  // using the Apps Script editor's function picker.
+  setupSheetsHttp: function () {
+    setupSheets();
+    return { success: true, message: 'sheets ready' };
   },
 
   // ---- reads ----

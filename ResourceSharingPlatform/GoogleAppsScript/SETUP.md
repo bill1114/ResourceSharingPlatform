@@ -6,23 +6,18 @@
 
 1. 到 [Google Sheets](https://sheets.google.com) 新增一份空白試算表，取個名字（例如「物資平台資料庫」）。
 2. 點 **檔案 > 設定**，把「地區設定／時區」設成你所在的時區（例如 `台灣 GMT+8`）。這會影響日期時間欄位的顯示。
+3. 從網址列複製這份試算表的 ID（網址 `https://docs.google.com/spreadsheets/d/《這一段》/edit` 中間那一段）。
 
-## 2. 貼上 Apps Script 程式碼
+## 2. 建立獨立的 Apps Script 專案並貼上程式碼
 
-1. 在試算表選單點 **擴充功能 > Apps Script**。
-2. 把彈出的編輯器裡預設的 `Code.gs` 內容全部刪除，貼上本資料夾的 [`Code.gs`](./Code.gs) 全部內容。
-3. 存檔（Ctrl+S）。
+用獨立（standalone）專案比綁定在試算表裡更好操作：
 
-## 3. 初始化 5 個工作表
+1. 開新分頁到 [script.new](https://script.new)，會自動建立一個新的 Apps Script 專案。
+2. 把預設的 `程式碼.gs` 內容全部刪除，貼上本資料夾 [`Code.gs`](./Code.gs) 的全部內容。
+3. 把檔案最上面的 `var SPREADSHEET_ID = 'REPLACE_WITH_YOUR_SPREADSHEET_ID';` 換成第 1 步複製的試算表 ID。
+4. 存檔（Ctrl+S 或按左上角的雲端圖示）。
 
-1. 在 Apps Script 編輯器上方的函式下拉選單，選擇 `setupSheets`。
-2. 點「執行」。第一次執行會跳出授權視窗：
-   - 選擇你的 Google 帳號
-   - 出現「Google 尚未驗證這個應用程式」時，點「進階」→「前往 (專案名稱)（不安全）」→「允許」
-   （這是正常的，因為這是你自己寫的私人腳本，不是要跑公開發佈的程式）
-3. 執行完成後回到試算表，應該會看到 5 個分頁：`SupplyLocation`、`SupplyItem`、`SupplyTransferLog`、`SupplyOutboundLog`、`UserAccount`，且都已經有表頭列。
-
-## 4. 設定密鑰（API_SECRET）
+## 3. 設定密鑰（API_SECRET）
 
 這個密鑰用來防止陌生人呼叫你的 Web App 亂寫資料。
 
@@ -31,20 +26,33 @@
 3. 屬性名稱填 `API_SECRET`，值填一組你自己想的亂數字串（例如用密碼產生器產生一組 32 碼英數字），存檔。
 4. **記下這組值**，等一下要填到 ASP.NET Core 專案的設定裡。
 
-## 5. 部署為 Web App
+## 4. 部署為 Web App
 
 1. Apps Script 編輯器右上角「部署」→「新增部署作業」。
 2. 齒輪圖示選擇類型：**網頁應用程式**。
 3. 設定：
    - 說明：隨意（例如 `v1`）
    - **執行身分：我**
-   - **具有存取權的使用者：任何人**（如果選「知道連結的任何人」也可以，重點是不要選只有自己，否則 C# 端無法呼叫）
-4. 點「部署」，同樣可能會再跳一次授權視窗，照第 3 步驟的方式允許即可。
+   - **具有存取權的使用者：任何人**（重點是不要選只有自己，否則 C# 端無法呼叫）
+4. 點「部署」，第一次會跳出授權畫面：
+   - 選擇你的 Google 帳號
+   - 出現「Google 尚未驗證這個應用程式」時，點「進階」→「前往 (專案名稱)（不安全）」→「允許」
+   （這是正常的，因為這是你自己寫的私人腳本，不是要跑公開發佈的程式）
 5. 完成後會顯示一組「網頁應用程式」網址，格式類似：
    `https://script.google.com/macros/s/AKfycb.../exec`
    **複製這個網址**，等一下要填到 ASP.NET Core 專案。
 
 > 之後如果你修改了 `Code.gs`，要讓改動生效，記得「部署」→「管理部署作業」→ 選現有部署 → 點編輯（鉛筆）→ 版本選「新版本」→ 部署。單純存檔不會更新已部署的網址內容。
+
+## 5. 初始化 5 個工作表
+
+不需要在編輯器裡手動選函式執行，部署好之後直接用瀏覽器造訪這個網址（把佔位文字換成你自己的值，`{...}` 部分要做 URL encode）：
+
+```
+你的網頁應用程式網址?body={"action":"setupSheetsHttp","secret":"你的API_SECRET"}
+```
+
+第一次執行會回傳 `{"success":true,"message":"sheets ready"}`，回到試算表應該會看到 5 個分頁：`SupplyLocation`、`SupplyItem`、`SupplyTransferLog`、`SupplyOutboundLog`、`UserAccount`，且都已經有表頭列（原本的空白「Sheet1／工作表1」分頁會被自動清掉）。
 
 ## 6. 把網址跟密鑰交給 ASP.NET Core 專案
 
