@@ -2,35 +2,31 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Models.ViewModels;
 using ResourceSharingPlatform.Services;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Controllers
 {
     public class SupplyTransferController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
         private readonly SupplyTransferService _transferService;
 
-        public SupplyTransferController(ApplicationDbContext context, SupplyTransferService transferService)
+        public SupplyTransferController(SheetsDataStore store, SupplyTransferService transferService)
         {
-            _context = context;
+            _store = store;
             _transferService = transferService;
         }
 
         // GET: SupplyTransfer
         public async Task<IActionResult> Index()
         {
-            var logs = await _context.SupplyTransferLogs
-                .Include(x => x.SupplyItem)
-                .Include(x => x.FromLocation)
-                .Include(x => x.ToLocation)
+            var logs = (await _store.GetTransferLogsAsync())
                 .OrderByDescending(x => x.TransferTime)
                 .Take(100)
-                .ToListAsync();
+                .ToList();
 
             return View(logs);
         }
@@ -83,7 +79,7 @@ namespace ResourceSharingPlatform.Controllers
         [Authorize]
         public async Task<IActionResult> ConfirmReceipt(int id)
         {
-            var log = await _context.SupplyTransferLogs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            var log = await _store.GetTransferLogByIdAsync(id);
             if (log == null)
             {
                 TempData["ErrorMessage"] = "找不到轉移紀錄";
@@ -109,7 +105,7 @@ namespace ResourceSharingPlatform.Controllers
         [Authorize]
         public async Task<IActionResult> CancelTransfer(int id)
         {
-            var log = await _context.SupplyTransferLogs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            var log = await _store.GetTransferLogByIdAsync(id);
             if (log == null)
             {
                 TempData["ErrorMessage"] = "找不到轉移紀錄";
@@ -142,14 +138,13 @@ namespace ResourceSharingPlatform.Controllers
 
         private async Task PopulateDropdownsAsync()
         {
-            ViewBag.Items = await _context.SupplyItems
+            ViewBag.Items = (await _store.GetItemsAsync())
                 .Where(x => x.IsActive)
-                .Include(x => x.Location)
                 .OrderBy(x => x.ItemName)
-                .ToListAsync();
+                .ToList();
 
             ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList(),
                 "Id",
                 "LocationName"
             );

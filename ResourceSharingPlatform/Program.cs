@@ -1,19 +1,19 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Services;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Add DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Google Sheets backend (replaces EF Core / SQL Server for this trial deployment)
+builder.Services.Configure<GoogleSheetsOptions>(builder.Configuration.GetSection(GoogleSheetsOptions.SectionName));
+builder.Services.AddHttpClient<GoogleSheetsClient>();
+builder.Services.AddScoped<SheetsDataStore>();
 
 // Authentication / Authorization
 builder.Services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
@@ -60,6 +60,6 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
-await DbInitializer.SeedAdminAsync(app.Services);
+await AdminSeeder.SeedAdminAsync(app.Services);
 
 app.Run();

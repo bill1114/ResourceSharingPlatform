@@ -1,27 +1,26 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Controllers
 {
     public class SupplyLocationController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
 
-        public SupplyLocationController(ApplicationDbContext context)
+        public SupplyLocationController(SheetsDataStore store)
         {
-            _context = context;
+            _store = store;
         }
 
         // GET: SupplyLocation
         public async Task<IActionResult> Index()
         {
-            var locations = await _context.SupplyLocations
+            var locations = (await _store.GetLocationsAsync())
                 .Where(x => x.IsActive)
                 .OrderByDescending(x => x.CreatedAt)
-                .ToListAsync();
+                .ToList();
             return View(locations);
         }
 
@@ -33,14 +32,16 @@ namespace ResourceSharingPlatform.Controllers
                 return NotFound();
             }
 
-            var location = await _context.SupplyLocations
-                .Include(x => x.SupplyItems)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var location = await _store.GetLocationByIdAsync(id.Value);
 
             if (location == null)
             {
                 return NotFound();
             }
+
+            location.SupplyItems = (await _store.GetItemsAsync())
+                .Where(x => x.LocationId == location.Id)
+                .ToList();
 
             return View(location);
         }
@@ -62,8 +63,7 @@ namespace ResourceSharingPlatform.Controllers
             {
                 location.IsActive = true;
                 location.CreatedAt = DateTime.Now;
-                _context.Add(location);
-                await _context.SaveChangesAsync();
+                await _store.CreateLocationAsync(location);
                 TempData["SuccessMessage"] = "據點新增成功！";
                 return RedirectToAction(nameof(Index));
             }
@@ -79,7 +79,7 @@ namespace ResourceSharingPlatform.Controllers
                 return NotFound();
             }
 
-            var location = await _context.SupplyLocations.FindAsync(id);
+            var location = await _store.GetLocationByIdAsync(id.Value);
             if (location == null)
             {
                 return NotFound();
@@ -100,24 +100,9 @@ namespace ResourceSharingPlatform.Controllers
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    location.UpdatedAt = DateTime.Now;
-                    _context.Update(location);
-                    await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "據點更新成功！";
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!LocationExists(location.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                location.UpdatedAt = DateTime.Now;
+                await _store.UpdateLocationAsync(location);
+                TempData["SuccessMessage"] = "據點更新成功！";
                 return RedirectToAction(nameof(Index));
             }
             return View(location);
@@ -132,8 +117,7 @@ namespace ResourceSharingPlatform.Controllers
                 return NotFound();
             }
 
-            var location = await _context.SupplyLocations
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var location = await _store.GetLocationByIdAsync(id.Value);
             if (location == null)
             {
                 return NotFound();
@@ -148,21 +132,16 @@ namespace ResourceSharingPlatform.Controllers
         [Authorize(Roles = Roles.AdminAndCadre)]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var location = await _context.SupplyLocations.FindAsync(id);
+            var location = await _store.GetLocationByIdAsync(id);
             if (location != null)
             {
                 location.IsActive = false;
                 location.UpdatedAt = DateTime.Now;
-                await _context.SaveChangesAsync();
+                await _store.UpdateLocationAsync(location);
                 TempData["SuccessMessage"] = "據點已停用！";
             }
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool LocationExists(int id)
-        {
-            return _context.SupplyLocations.Any(e => e.Id == id);
         }
     }
 }

@@ -1,17 +1,15 @@
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
-using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Models.ViewModels;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Services
 {
     public class DashboardService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
 
-        public DashboardService(ApplicationDbContext context)
+        public DashboardService(SheetsDataStore store)
         {
-            _context = context;
+            _store = store;
         }
 
         public async Task<DashboardViewModel> GetDashboardAsync()
@@ -19,14 +17,8 @@ namespace ResourceSharingPlatform.Services
             var today = DateTime.Today;
             var expiringDate = today.AddDays(30);
 
-            var items = await _context.SupplyItems
-                .Include(x => x.Location)
-                .Where(x => x.IsActive)
-                .ToListAsync();
-
-            var locations = await _context.SupplyLocations
-                .Where(x => x.IsActive)
-                .ToListAsync();
+            var items = (await _store.GetItemsAsync()).Where(x => x.IsActive).ToList();
+            var locations = (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList();
 
             return new DashboardViewModel
             {

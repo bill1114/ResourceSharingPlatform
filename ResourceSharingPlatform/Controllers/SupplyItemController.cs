@@ -1,32 +1,31 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Controllers
 {
     public class SupplyItemController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
         private readonly IWebHostEnvironment _environment;
 
         private static readonly string[] AllowedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
         private const long MaxImageSizeBytes = 5 * 1024 * 1024;
 
-        public SupplyItemController(ApplicationDbContext context, IWebHostEnvironment environment)
+        public SupplyItemController(SheetsDataStore store, IWebHostEnvironment environment)
         {
-            _context = context;
+            _store = store;
             _environment = environment;
         }
 
         // GET: SupplyItem
         public async Task<IActionResult> Index(int? locationId, string? category, string? stockType)
         {
-            var query = _context.SupplyItems
-                .Include(s => s.Location)
-                .Where(x => x.IsActive);
+            var query = (await _store.GetItemsAsync())
+                .Where(x => x.IsActive)
+                .AsEnumerable();
 
             if (locationId.HasValue)
             {
@@ -43,21 +42,21 @@ namespace ResourceSharingPlatform.Controllers
                 query = query.Where(x => x.StockType == stockType);
             }
 
-            var items = await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
+            var items = query.OrderByDescending(x => x.CreatedAt).ToList();
 
             // For filter dropdowns
             ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList(),
                 "Id",
                 "LocationName",
                 locationId
             );
 
-            ViewBag.Categories = await _context.SupplyItems
+            ViewBag.Categories = (await _store.GetItemsAsync())
                 .Where(x => x.IsActive)
                 .Select(x => x.Category)
                 .Distinct()
-                .ToListAsync();
+                .ToList();
 
             ViewBag.SelectedCategory = category;
             ViewBag.SelectedStockType = stockType;
@@ -73,9 +72,7 @@ namespace ResourceSharingPlatform.Controllers
                 return NotFound();
             }
 
-            var item = await _context.SupplyItems
-                .Include(s => s.Location)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var item = await _store.GetItemByIdAsync(id.Value);
 
             if (item == null)
             {
@@ -90,7 +87,7 @@ namespace ResourceSharingPlatform.Controllers
         public async Task<IActionResult> Create()
         {
             ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList(),
                 "Id",
                 "LocationName"
             );
@@ -131,14 +128,13 @@ namespace ResourceSharingPlatform.Controllers
 
                 item.IsActive = true;
                 item.CreatedAt = DateTime.Now;
-                _context.Add(item);
-                await _context.SaveChangesAsync();
+                await _store.CreateItemAsync(item);
                 TempData["SuccessMessage"] = "物資新增成功！";
                 return RedirectToAction(nameof(Index));
             }
 
             ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList(),
                 "Id",
                 "LocationName",
                 item.LocationId
@@ -155,14 +151,14 @@ namespace ResourceSharingPlatform.Controllers
                 return NotFound();
             }
 
-            var item = await _context.SupplyItems.FindAsync(id);
+            var item = await _store.GetItemByIdAsync(id.Value);
             if (item == null)
             {
                 return NotFound();
             }
 
             ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList(),
                 "Id",
                 "LocationName",
                 item.LocationId
@@ -203,38 +199,23 @@ namespace ResourceSharingPlatform.Controllers
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    var existing = await _context.SupplyItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
-                    item.ImagePath = existing?.ImagePath;
+                var existing = await _store.GetItemByIdAsync(id);
+                item.ImagePath = existing?.ImagePath;
 
-                    if (imageFile != null && imageFile.Length > 0)
-                    {
-                        DeleteImageIfExists(existing?.ImagePath);
-                        item.ImagePath = await SaveImageAsync(imageFile);
-                    }
-
-                    item.UpdatedAt = DateTime.Now;
-                    _context.Update(item);
-                    await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "物資更新成功！";
-                }
-                catch (DbUpdateConcurrencyException)
+                if (imageFile != null && imageFile.Length > 0)
                 {
-                    if (!ItemExists(item.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    DeleteImageIfExists(existing?.ImagePath);
+                    item.ImagePath = await SaveImageAsync(imageFile);
                 }
+
+                item.UpdatedAt = DateTime.Now;
+                await _store.UpdateItemAsync(item);
+                TempData["SuccessMessage"] = "物資更新成功！";
                 return RedirectToAction(nameof(Index));
             }
 
             ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList(),
                 "Id",
                 "LocationName",
                 item.LocationId
@@ -251,9 +232,7 @@ namespace ResourceSharingPlatform.Controllers
                 return NotFound();
             }
 
-            var item = await _context.SupplyItems
-                .Include(s => s.Location)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var item = await _store.GetItemByIdAsync(id.Value);
 
             if (item == null)
             {
@@ -269,21 +248,16 @@ namespace ResourceSharingPlatform.Controllers
         [Authorize(Roles = Roles.AdminAndCadre)]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var item = await _context.SupplyItems.FindAsync(id);
+            var item = await _store.GetItemByIdAsync(id);
             if (item != null)
             {
                 item.IsActive = false;
                 item.UpdatedAt = DateTime.Now;
-                await _context.SaveChangesAsync();
+                await _store.UpdateItemAsync(item);
                 TempData["SuccessMessage"] = "物資已停用！";
             }
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ItemExists(int id)
-        {
-            return _context.SupplyItems.Any(e => e.Id == id);
         }
 
         private bool TryValidateImage(IFormFile file, out string? error)

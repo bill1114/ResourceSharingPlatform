@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models.ViewModels;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Controllers
 {
     public class MapController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
 
-        public MapController(ApplicationDbContext context)
+        public MapController(SheetsDataStore store)
         {
-            _context = context;
+            _store = store;
         }
 
         public IActionResult Index()
@@ -25,13 +24,13 @@ namespace ResourceSharingPlatform.Controllers
             var today = DateTime.Today;
             var expiringDate = today.AddDays(30);
 
-            var locations = await _context.SupplyLocations
+            var locations = (await _store.GetLocationsAsync())
                 .Where(x => x.IsActive && x.Latitude != null && x.Longitude != null)
-                .ToListAsync();
+                .ToList();
 
-            var items = await _context.SupplyItems
+            var items = (await _store.GetItemsAsync())
                 .Where(x => x.IsActive)
-                .ToListAsync();
+                .ToList();
 
             var result = locations.Select(l => new MapLocationViewModel
             {

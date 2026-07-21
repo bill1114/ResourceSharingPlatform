@@ -1,18 +1,20 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using ResourceSharingPlatform.Models;
 
-namespace ResourceSharingPlatform.Data
+namespace ResourceSharingPlatform.Services.GoogleSheets
 {
-    public static class DbInitializer
+    // Replaces Data/DbInitializer.cs. Same logic, just backed by the Sheets
+    // store instead of ApplicationDbContext.
+    public static class AdminSeeder
     {
         public static async Task SeedAdminAsync(IServiceProvider services)
         {
             using var scope = services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var store = scope.ServiceProvider.GetRequiredService<SheetsDataStore>();
             var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<UserAccount>>();
 
-            if (await context.UserAccounts.AnyAsync())
+            var existingUsers = await store.GetUsersAsync();
+            if (existingUsers.Count > 0)
             {
                 return;
             }
@@ -27,8 +29,7 @@ namespace ResourceSharingPlatform.Data
             };
             admin.PasswordHash = hasher.HashPassword(admin, "admin");
 
-            context.UserAccounts.Add(admin);
-            await context.SaveChangesAsync();
+            await store.CreateUserAsync(admin);
         }
     }
 }

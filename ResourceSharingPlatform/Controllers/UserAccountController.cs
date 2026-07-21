@@ -3,32 +3,30 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Models.ViewModels;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Controllers
 {
     [Authorize(Roles = Roles.Admin)]
     public class UserAccountController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
         private readonly IPasswordHasher<UserAccount> _hasher;
 
-        public UserAccountController(ApplicationDbContext context, IPasswordHasher<UserAccount> hasher)
+        public UserAccountController(SheetsDataStore store, IPasswordHasher<UserAccount> hasher)
         {
-            _context = context;
+            _store = store;
             _hasher = hasher;
         }
 
         // GET: UserAccount
         public async Task<IActionResult> Index()
         {
-            var users = await _context.UserAccounts
-                .Include(x => x.Location)
+            var users = (await _store.GetUsersAsync())
                 .OrderBy(x => x.UserName)
-                .ToListAsync();
+                .ToList();
             return View(users);
         }
 
@@ -49,7 +47,7 @@ namespace ResourceSharingPlatform.Controllers
                 ModelState.AddModelError(nameof(model.Password), "新增帳號時必須設定密碼");
             }
 
-            if (await _context.UserAccounts.AnyAsync(x => x.UserName == model.UserName))
+            if ((await _store.GetUsersAsync()).Any(x => x.UserName == model.UserName))
             {
                 ModelState.AddModelError(nameof(model.UserName), "此帳號已存在");
             }
@@ -67,8 +65,7 @@ namespace ResourceSharingPlatform.Controllers
                 };
                 user.PasswordHash = _hasher.HashPassword(user, model.Password!);
 
-                _context.UserAccounts.Add(user);
-                await _context.SaveChangesAsync();
+                await _store.CreateUserAsync(user);
                 TempData["SuccessMessage"] = "帳號新增成功！";
                 return RedirectToAction(nameof(Index));
             }
@@ -82,7 +79,7 @@ namespace ResourceSharingPlatform.Controllers
         {
             if (id == null) return NotFound();
 
-            var user = await _context.UserAccounts.FindAsync(id);
+            var user = await _store.GetUserByIdAsync(id.Value);
             if (user == null) return NotFound();
 
             await PopulateLocationsAsync();
@@ -104,18 +101,19 @@ namespace ResourceSharingPlatform.Controllers
         {
             if (id != model.Id) return NotFound();
 
-            var user = await _context.UserAccounts.FindAsync(id);
+            var user = await _store.GetUserByIdAsync(id);
             if (user == null) return NotFound();
 
-            if (await _context.UserAccounts.AnyAsync(x => x.UserName == model.UserName && x.Id != id))
+            var allUsers = await _store.GetUsersAsync();
+
+            if (allUsers.Any(x => x.UserName == model.UserName && x.Id != id))
             {
                 ModelState.AddModelError(nameof(model.UserName), "此帳號已存在");
             }
 
             if (!model.IsActive && user.RoleName == Roles.Admin)
             {
-                var otherActiveAdmins = await _context.UserAccounts
-                    .AnyAsync(x => x.RoleName == Roles.Admin && x.IsActive && x.Id != id);
+                var otherActiveAdmins = allUsers.Any(x => x.RoleName == Roles.Admin && x.IsActive && x.Id != id);
                 if (!otherActiveAdmins)
                 {
                     ModelState.AddModelError(string.Empty, "至少需要保留一位啟用中的管理人員帳號");
@@ -136,7 +134,7 @@ namespace ResourceSharingPlatform.Controllers
                     user.PasswordHash = _hasher.HashPassword(user, model.Password);
                 }
 
-                await _context.SaveChangesAsync();
+                await _store.UpdateUserAsync(user);
                 TempData["SuccessMessage"] = "帳號更新成功！";
                 return RedirectToAction(nameof(Index));
             }
@@ -149,7 +147,7 @@ namespace ResourceSharingPlatform.Controllers
         private async Task PopulateLocationsAsync()
         {
             ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                (await _store.GetLocationsAsync()).Where(x => x.IsActive).ToList(),
                 "Id",
                 "LocationName"
             );
@@ -160,7 +158,7 @@ namespace ResourceSharingPlatform.Controllers
         {
             if (id == null) return NotFound();
 
-            var user = await _context.UserAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            var user = await _store.GetUserByIdAsync(id.Value);
             if (user == null) return NotFound();
 
             return View(user);
@@ -171,7 +169,7 @@ namespace ResourceSharingPlatform.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = await _context.UserAccounts.FindAsync(id);
+            var user = await _store.GetUserByIdAsync(id);
             if (user == null) return RedirectToAction(nameof(Index));
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -183,8 +181,8 @@ namespace ResourceSharingPlatform.Controllers
 
             if (user.RoleName == Roles.Admin)
             {
-                var otherActiveAdmins = await _context.UserAccounts
-                    .AnyAsync(x => x.RoleName == Roles.Admin && x.IsActive && x.Id != id);
+                var otherActiveAdmins = (await _store.GetUsersAsync())
+                    .Any(x => x.RoleName == Roles.Admin && x.IsActive && x.Id != id);
                 if (!otherActiveAdmins)
                 {
                     TempData["ErrorMessage"] = "至少需要保留一位啟用中的管理人員帳號";
@@ -194,7 +192,7 @@ namespace ResourceSharingPlatform.Controllers
 
             user.IsActive = false;
             user.UpdatedAt = DateTime.Now;
-            await _context.SaveChangesAsync();
+            await _store.UpdateUserAsync(user);
             TempData["SuccessMessage"] = "帳號已停用！";
 
             return RedirectToAction(nameof(Index));

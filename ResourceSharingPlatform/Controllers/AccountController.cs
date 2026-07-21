@@ -4,22 +4,21 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Models.ViewModels;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Controllers
 {
     [AllowAnonymous]
     public class AccountController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
         private readonly IPasswordHasher<UserAccount> _hasher;
 
-        public AccountController(ApplicationDbContext context, IPasswordHasher<UserAccount> hasher)
+        public AccountController(SheetsDataStore store, IPasswordHasher<UserAccount> hasher)
         {
-            _context = context;
+            _store = store;
             _hasher = hasher;
         }
 
@@ -43,8 +42,8 @@ namespace ResourceSharingPlatform.Controllers
                 return View(model);
             }
 
-            var user = await _context.UserAccounts
-                .FirstOrDefaultAsync(x => x.UserName == model.UserName && x.IsActive);
+            var candidate = await _store.GetUserByUsernameAsync(model.UserName);
+            var user = candidate != null && candidate.IsActive ? candidate : null;
 
             var passwordOk = user != null &&
                 _hasher.VerifyHashedPassword(user, user.PasswordHash, model.Password) != PasswordVerificationResult.Failed;

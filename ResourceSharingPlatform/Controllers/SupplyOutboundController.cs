@@ -1,34 +1,31 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Models.ViewModels;
 using ResourceSharingPlatform.Services;
+using ResourceSharingPlatform.Services.GoogleSheets;
 
 namespace ResourceSharingPlatform.Controllers
 {
     public class SupplyOutboundController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SheetsDataStore _store;
         private readonly SupplyOutboundService _outboundService;
 
-        public SupplyOutboundController(ApplicationDbContext context, SupplyOutboundService outboundService)
+        public SupplyOutboundController(SheetsDataStore store, SupplyOutboundService outboundService)
         {
-            _context = context;
+            _store = store;
             _outboundService = outboundService;
         }
 
         // GET: SupplyOutbound
         public async Task<IActionResult> Index()
         {
-            var logs = await _context.SupplyOutboundLogs
-                .Include(x => x.SupplyItem)
-                .Include(x => x.Location)
+            var logs = (await _store.GetOutboundLogsAsync())
                 .OrderByDescending(x => x.OutboundTime)
                 .Take(100)
-                .ToListAsync();
+                .ToList();
 
             ViewBag.ExpiringItems = await GetExpiringItemsAsync();
 
@@ -69,10 +66,9 @@ namespace ResourceSharingPlatform.Controllers
 
         private async Task PopulateItemsAsync(int? selectedId)
         {
-            var items = await _context.SupplyItems
+            var items = (await _store.GetItemsAsync())
                 .Where(x => x.IsActive)
-                .Include(x => x.Location)
-                .ToListAsync();
+                .ToList();
 
             var today = DateTime.Today;
 
@@ -97,11 +93,10 @@ namespace ResourceSharingPlatform.Controllers
             var today = DateTime.Today;
             var expiringDate = today.AddDays(30);
 
-            return await _context.SupplyItems
-                .Include(x => x.Location)
+            return (await _store.GetItemsAsync())
                 .Where(x => x.IsActive && x.Quantity > 0 && x.ExpirationDate != null && x.ExpirationDate <= expiringDate)
                 .OrderBy(x => x.ExpirationDate)
-                .ToListAsync();
+                .ToList();
         }
     }
 }
