@@ -156,6 +156,14 @@ function coerceOut_(type, value) {
   }
 }
 
+function sha256Hex_(text) {
+  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8);
+  return bytes.map(function (b) {
+    var v = (b < 0 ? b + 256 : b).toString(16);
+    return v.length === 1 ? '0' + v : v;
+  }).join('');
+}
+
 function toIsoDate_(date) {
   return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
 }
@@ -259,6 +267,24 @@ var ACTIONS = {
   setupSheetsHttp: function () {
     setupSheets();
     return { success: true, message: 'sheets ready' };
+  },
+  // Server-side credential check for the static frontend (no .NET
+  // PasswordHasher available client-side, so this uses SHA-256 instead).
+  login: function (p) {
+    var user = readAll_('UserAccount').find(function (u) { return u.UserName === p.userName; });
+    if (!user || !user.IsActive || user.PasswordHash !== sha256Hex_(p.password || '')) {
+      return { success: false, message: '帳號或密碼錯誤' };
+    }
+    return {
+      success: true,
+      data: {
+        Id: user.Id,
+        UserName: user.UserName,
+        DisplayName: user.DisplayName,
+        RoleName: user.RoleName,
+        LocationId: user.LocationId
+      }
+    };
   },
 
   // ---- reads ----
