@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = "出庫紀錄";
     var expiringItems = ViewBag.ExpiringItems as List<SupplyItem>;
+    var isAdmin = User.IsInRole(Roles.Admin);
+    var hasLocation = int.TryParse(User.FindFirst("LocationId")?.Value, out _);
 }
 
 <div class="container-fluid mt-4">
@@ -13,6 +15,13 @@
             <i class="bi bi-plus-circle"></i> 新增出庫
         </a>
     </div>
+
+    @if (!isAdmin && !hasLocation)
+    {
+        <div class="alert alert-secondary">
+            <i class="bi bi-info-circle"></i> 您的帳號尚未指定所屬據點，無法執行出庫，請聯絡管理人員設定。
+        </div>
+    }
 
     @if (expiringItems != null && expiringItems.Any())
     {
@@ -40,7 +49,7 @@
                                 <td>@ex.ExpirationDate?.ToString("yyyy-MM-dd")</td>
                                 <td><span class="badge @ex.GetStatusBadgeClass()">@ex.GetStatus()</span></td>
                                 <td>
-                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" class="btn btn-sm btn-outline-warning">選擇出庫</a>
+                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" asp-route-locationId="@ex.LocationId" class="btn btn-sm btn-outline-warning">選擇出庫</a>
                                 </td>
                             </tr>
                         }

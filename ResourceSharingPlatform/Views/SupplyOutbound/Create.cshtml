@@ -1,9 +1,26 @@
 @model ResourceSharingPlatform.Models.ViewModels.OutboundViewModel
 @using ResourceSharingPlatform.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "物資出庫";
     var expiringItems = ViewBag.ExpiringItems as List<SupplyItem>;
+    var itemOptions = (List<SupplyItem>)ViewBag.Items;
+    int? lockedLocationId = ViewBag.LockedLocationId;
+    var lockedLocationName = lockedLocationId.HasValue
+        ? ((SelectList)ViewBag.Locations).FirstOrDefault(x => x.Value == lockedLocationId.Value.ToString())?.Text
+        : null;
+}
+
+@functions {
+    string ItemOptionText(SupplyItem opt)
+    {
+        var today = DateTime.Today;
+        var text = opt.ItemName + " (" + (opt.Location?.LocationName ?? "") + ") - 現有 " + opt.Quantity + " " + opt.Unit;
+        if (opt.ExpirationDate.HasValue && opt.ExpirationDate.Value < today) text += " ⚠已過期";
+        else if (opt.ExpirationDate.HasValue && opt.ExpirationDate.Value <= today.AddDays(30)) text += " ⚠即將過期";
+        return text;
+    }
 }
 
 <div class="container mt-4">
@@ -44,7 +61,7 @@
                                 <td>@ex.ExpirationDate?.ToString("yyyy-MM-dd")</td>
                                 <td><span class="badge @ex.GetStatusBadgeClass()">@ex.GetStatus()</span></td>
                                 <td>
-                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" class="btn btn-sm btn-outline-warning">選擇出庫</a>
+                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" asp-route-locationId="@ex.LocationId" class="btn btn-sm btn-outline-warning">選擇出庫</a>
                                 </td>
                             </tr>
                         }
@@ -62,11 +79,46 @@
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
                         <div class="mb-3">
+                            <label class="form-label">據點 <span class="text-danger">*</span></label>
+                            @if (lockedLocationId.HasValue)
+                            {
+                                <input type="text" class="form-control" value="@lockedLocationName" disabled />
+                                <input type="hidden" name="LocationId" id="LocationId" value="@lockedLocationId" />
+                                <div class="form-text">您的帳號僅能對所屬據點執行出庫。</div>
+                            }
+                            else
+                            {
+                                <select asp-for="LocationId" asp-items="ViewBag.Locations" id="LocationId" class="form-select">
+                                    <option value="">請選擇據點</option>
+                                </select>
+                            }
+                            <span asp-validation-for="LocationId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">分類</label>
+                            <div class="btn-group w-100" role="group" id="stockTypeFilter">
+                                <input type="radio" class="btn-check" name="stockTypeFilter" id="filterAll" value="" checked autocomplete="off">
+                                <label class="btn btn-outline-dark" for="filterAll">全部</label>
+                                @foreach (var st in StockTypes.All)
+                                {
+                                    <input type="radio" class="btn-check" name="stockTypeFilter" id="filter_@st" value="@st" autocomplete="off">
+                                    <label class="btn btn-outline-dark" for="filter_@st">@StockTypes.ToDisplayName(st)</label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
                             <label asp-for="SupplyItemId" class="form-label">選擇物資 <span class="text-danger">*</span></label>
-                            <select asp-for="SupplyItemId" asp-items="ViewBag.Items" class="form-select">
+                            <select asp-for="SupplyItemId" id="itemSelect" class="form-select">
                                 <option value="">請選擇物資</option>
+                                @foreach (var opt in itemOptions)
+                                {
+                                    <option value="@opt.Id" data-location-id="@opt.LocationId" data-stock-type="@opt.StockType" selected="@(opt.Id == Model.SupplyItemId)">@ItemOptionText(opt)</option>
+                                }
                             </select>
                             <span asp-validation-for="SupplyItemId" class="text-danger"></span>
+                            <div class="form-text">依有效期限由近到遠排序，即期／已過期物資已加註提醒。</div>
                         </div>
 
                         <div class="mb-3">
@@ -121,9 +173,10 @@
             <div class="alert alert-info">
                 <h6><i class="bi bi-info-circle"></i> 出庫說明</h6>
                 <ul class="mb-0">
+                    <li>先選擇據點，物資選單會自動只顯示該據點的物資</li>
+                    <li>可搭配分類快速篩選（無效期／有效期／冷凍食品）</li>
                     <li>出庫後物資會直接離開系統庫存，不會轉入其他據點</li>
                     <li>系統會自動檢查庫存是否足夠</li>
-                    <li>所有出庫紀錄都會保留領用人與操作人員資訊</li>
                 </ul>
             </div>
 
@@ -141,4 +194,45 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        (function () {
+            var locationInput = document.getElementById('LocationId');
+            var itemSelect = document.getElementById('itemSelect');
+            var stockTypeInputs = document.querySelectorAll('input[name="stockTypeFilter"]');
+
+            function currentStockType() {
+                var checked = document.querySelector('input[name="stockTypeFilter"]:checked');
+                return checked ? checked.value : '';
+            }
+
+            function filterItems() {
+                var locVal = locationInput ? locationInput.value : '';
+                var stockVal = currentStockType();
+                var currentValid = false;
+
+                itemSelect.querySelectorAll('option[data-location-id]').forEach(function (opt) {
+                    var matchesLocation = !locVal || opt.getAttribute('data-location-id') === locVal;
+                    var matchesStock = !stockVal || opt.getAttribute('data-stock-type') === stockVal;
+                    var show = matchesLocation && matchesStock;
+                    opt.style.display = show ? '' : 'none';
+                    if (show && opt.value === itemSelect.value) {
+                        currentValid = true;
+                    }
+                });
+
+                if (!currentValid) {
+                    itemSelect.value = '';
+                }
+            }
+
+            if (locationInput && locationInput.tagName === 'SELECT') {
+                locationInput.addEventListener('change', filterItems);
+            }
+            stockTypeInputs.forEach(function (input) {
+                input.addEventListener('change', filterItems);
+            });
+
+            filterItems();
+        })();
+    </script>
 }

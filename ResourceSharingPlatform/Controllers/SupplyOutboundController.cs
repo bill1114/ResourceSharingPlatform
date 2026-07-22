@@ -30,17 +30,37 @@ namespace ResourceSharingPlatform.Controllers
                 .Take(100)
                 .ToListAsync();
 
-            ViewBag.ExpiringItems = await GetExpiringItemsAsync();
+            ViewBag.ExpiringItems = await GetExpiringItemsAsync(GetMyLocationIdIfRestricted());
 
             return View(logs);
         }
 
         // GET: SupplyOutbound/Create
-        public async Task<IActionResult> Create(int? supplyItemId)
+        public async Task<IActionResult> Create(int? supplyItemId, int? locationId)
         {
-            await PopulateItemsAsync(supplyItemId);
-            ViewBag.ExpiringItems = await GetExpiringItemsAsync();
-            return View(new OutboundViewModel { SupplyItemId = supplyItemId ?? 0 });
+            var myLocationId = GetMyLocationIdIfRestricted();
+
+            if (myLocationId == NoAccessSentinel)
+            {
+                TempData["ErrorMessage"] = "您的帳號尚未指定所屬據點，無法執行出庫，請聯絡管理人員設定。";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var model = new OutboundViewModel { SupplyItemId = supplyItemId ?? 0 };
+
+            if (myLocationId.HasValue)
+            {
+                model.LocationId = myLocationId.Value;
+            }
+            else if (locationId.HasValue)
+            {
+                model.LocationId = locationId.Value;
+            }
+
+            await PopulateFormDataAsync(myLocationId);
+            ViewBag.ExpiringItems = await GetExpiringItemsAsync(myLocationId);
+
+            return View(model);
         }
 
         // POST: SupplyOutbound/Create
@@ -48,6 +68,19 @@ namespace ResourceSharingPlatform.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OutboundViewModel model)
         {
+            var myLocationId = GetMyLocationIdIfRestricted();
+
+            if (myLocationId == NoAccessSentinel)
+            {
+                TempData["ErrorMessage"] = "您的帳號尚未指定所屬據點，無法執行出庫，請聯絡管理人員設定。";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (myLocationId.HasValue && model.LocationId != myLocationId.Value)
+            {
+                ModelState.AddModelError(string.Empty, "您沒有權限在此據點執行出庫");
+            }
+
             if (ModelState.IsValid)
             {
                 var operatorName = User.FindFirstValue("DisplayName") ?? User.Identity?.Name;
@@ -62,13 +95,39 @@ namespace ResourceSharingPlatform.Controllers
                 TempData["ErrorMessage"] = result.Message;
             }
 
-            await PopulateItemsAsync(model.SupplyItemId);
-            ViewBag.ExpiringItems = await GetExpiringItemsAsync();
+            await PopulateFormDataAsync(myLocationId);
+            ViewBag.ExpiringItems = await GetExpiringItemsAsync(myLocationId);
             return View(model);
         }
 
-        private async Task PopulateItemsAsync(int? selectedId)
+        // Sentinel value distinguishing "no location assigned" (blocked) from "unrestricted" (null/Admin)
+        private const int NoAccessSentinel = -1;
+
+        private int? GetMyLocationIdIfRestricted()
         {
+            if (User.IsInRole(Roles.Admin))
+            {
+                return null;
+            }
+
+            var locationClaim = User.FindFirstValue("LocationId");
+            if (int.TryParse(locationClaim, out var locationId))
+            {
+                return locationId;
+            }
+
+            return NoAccessSentinel;
+        }
+
+        private async Task PopulateFormDataAsync(int? lockedLocationId)
+        {
+            ViewBag.Locations = new SelectList(
+                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
+                "Id",
+                "LocationName"
+            );
+            ViewBag.LockedLocationId = lockedLocationId;
+
             var items = await _context.SupplyItems
                 .Where(x => x.IsActive)
                 .Include(x => x.Location)
@@ -80,28 +139,28 @@ namespace ResourceSharingPlatform.Controllers
                 .OrderBy(x => x.ExpirationDate.HasValue ? 0 : 1)
                 .ThenBy(x => x.ExpirationDate)
                 .ThenBy(x => x.ItemName)
-                .Select(x => new
-                {
-                    x.Id,
-                    DisplayText = x.ItemName + " (" + (x.Location?.LocationName ?? "") + ") - 現有 " + x.Quantity + " " + x.Unit
-                        + (x.ExpirationDate.HasValue && x.ExpirationDate.Value < today ? " ⚠已過期" : "")
-                        + (x.ExpirationDate.HasValue && x.ExpirationDate.Value >= today && x.ExpirationDate.Value <= today.AddDays(30) ? " ⚠即將過期" : "")
-                })
                 .ToList();
 
-            ViewBag.Items = new SelectList(ordered, "Id", "DisplayText", selectedId);
+            ViewBag.Items = ordered;
         }
 
-        private async Task<List<SupplyItem>> GetExpiringItemsAsync()
+        private async Task<List<SupplyItem>> GetExpiringItemsAsync(int? restrictToLocationId)
         {
             var today = DateTime.Today;
             var expiringDate = today.AddDays(30);
 
-            return await _context.SupplyItems
+            var query = _context.SupplyItems
                 .Include(x => x.Location)
-                .Where(x => x.IsActive && x.Quantity > 0 && x.ExpirationDate != null && x.ExpirationDate <= expiringDate)
-                .OrderBy(x => x.ExpirationDate)
-                .ToListAsync();
+                .Where(x => x.IsActive && x.Quantity > 0 && x.ExpirationDate != null && x.ExpirationDate <= expiringDate);
+
+            if (restrictToLocationId.HasValue)
+            {
+                // NoAccessSentinel (-1) naturally matches no location, correctly showing nothing
+                // for users who have no assigned location.
+                query = query.Where(x => x.LocationId == restrictToLocationId.Value);
+            }
+
+            return await query.OrderBy(x => x.ExpirationDate).ToListAsync();
         }
     }
 }

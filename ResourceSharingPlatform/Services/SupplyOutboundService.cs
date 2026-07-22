@@ -26,11 +26,11 @@ namespace ResourceSharingPlatform.Services
             try
             {
                 var item = await _context.SupplyItems
-                    .FirstOrDefaultAsync(x => x.Id == model.SupplyItemId && x.IsActive);
+                    .FirstOrDefaultAsync(x => x.Id == model.SupplyItemId && x.LocationId == model.LocationId && x.IsActive);
 
                 if (item == null)
                 {
-                    return (false, "找不到指定的物資");
+                    return (false, "找不到指定據點的這項物資");
                 }
 
                 if (item.Quantity < model.OutboundQuantity)

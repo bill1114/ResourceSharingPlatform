@@ -4,6 +4,9 @@ namespace ResourceSharingPlatform.Models.ViewModels
 {
     public class OutboundViewModel
     {
+        [Required(ErrorMessage = "請選擇據點")]
+        public int LocationId { get; set; }
+
         [Required(ErrorMessage = "請選擇物資")]
         public int SupplyItemId { get; set; }
 
