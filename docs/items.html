@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>物資管理 - 地方物資管理平台</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body>
+  <header id="nav-placeholder"></header>
+  <div class="container-fluid">
+    <div id="alertBox"></div>
+    <main class="pb-3">
+      <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="bi bi-box"></i> 物資管理</h2>
+          <button class="btn btn-primary" id="btnNewItem" style="display:none;"><i class="bi bi-plus-circle"></i> 新增物資</button>
+        </div>
+
+        <div class="btn-group mb-3" id="stockTypeTabs" role="group"></div>
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light"><i class="bi bi-funnel"></i> 篩選條件</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">據點</label>
+                <select id="filterLocation" class="form-select"><option value="">全部據點</option></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">種類</label>
+                <select id="filterCategory" class="form-select"><option value="">全部種類</option></select>
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <button type="button" class="btn btn-secondary" id="btnResetFilter"><i class="bi bi-arrow-clockwise"></i> 重設</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>種類</th><th>物資名稱</th><th>規格</th><th>分類</th><th>數量</th><th>單位</th>
+                    <th>有效期限</th><th>目前據點</th><th>安全庫存</th><th>狀態</th><th width="160">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="itemsTbody"></tbody>
+              </table>
+            </div>
+            <p class="text-muted mb-0" id="itemCount"></p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create/Edit modal -->
+  <div class="modal fade" id="itemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="itemModalTitle">新增物資</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="itemForm">
+            <input type="hidden" id="f-Id" />
+            <div class="btn-group w-100 mb-3" role="group">
+              <input type="radio" class="btn-check" name="StockType" id="stockNoExpiry" value="NoExpiry" autocomplete="off">
+              <label class="btn btn-outline-primary" for="stockNoExpiry">無效期物資</label>
+              <input type="radio" class="btn-check" name="StockType" id="stockHasExpiry" value="HasExpiry" autocomplete="off" checked>
+              <label class="btn btn-outline-success" for="stockHasExpiry">有效期物資</label>
+              <input type="radio" class="btn-check" name="StockType" id="stockFrozen" value="Frozen" autocomplete="off">
+              <label class="btn btn-outline-info" for="stockFrozen">冷凍食品</label>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">物資種類 <span class="text-danger">*</span></label>
+                <input id="f-Category" class="form-control" placeholder="例如：食品、醫療、防護" required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">物資名稱 <span class="text-danger">*</span></label>
+                <input id="f-ItemName" class="form-control" placeholder="例如：飲用水" required />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">規格</label>
+              <input id="f-Specification" class="form-control" placeholder="例如：500ml、大／中／小" />
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">目前數量 <span class="text-danger">*</span></label>
+                <input id="f-Quantity" type="number" min="0" class="form-control" required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">單位</label>
+                <input id="f-Unit" class="form-control" placeholder="例如：瓶、箱、組、件" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3" id="expirationWrap">
+                <label class="form-label">有效期限</label>
+                <input id="f-ExpirationDate" type="date" class="form-control" />
+                <small class="text-muted">無效期物資不需填寫</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">所在據點 <span class="text-danger">*</span></label>
+                <select id="f-LocationId" class="form-select" required><option value="">請選擇據點</option></select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">安全庫存 <span class="text-danger">*</span></label>
+              <input id="f-SafetyStock" type="number" min="0" class="form-control" required />
+              <small class="text-muted">當數量低於此值時會顯示警告</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">備註</label>
+              <textarea id="f-Remark" class="form-control" rows="3" placeholder="其他說明或注意事項"></textarea>
+            </div>
+            <div class="alert alert-secondary small mb-0"><i class="bi bi-info-circle"></i> 此靜態版本不支援圖片上傳。</div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="btnSaveItem"><i class="bi bi-check-circle"></i> 儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let allItems = [];
+    let allLocations = [];
+    let currentStockType = '';
+    const user = requireLogin();
+    const canEdit = user && (user.RoleName === 'Admin' || user.RoleName === 'Cadre');
+
+    function applyFilters() {
+      const locationId = document.getElementById('filterLocation').value;
+      const category = document.getElementById('filterCategory').value;
+      let list = allItems.filter(i => i.IsActive);
+      if (currentStockType) list = list.filter(i => i.StockType === currentStockType);
+      if (locationId) list = list.filter(i => String(i.LocationId) === locationId);
+      if (category) list = list.filter(i => i.Category === category);
+      renderTable(list);
+    }
+
+    function renderTable(list) {
+      const locationById = Object.fromEntries(allLocations.map(l => [l.Id, l]));
+      document.getElementById('itemCount').textContent = `共 ${list.length} 筆物資`;
+      document.getElementById('itemsTbody').innerHTML = list.map(item => {
+        const status = itemStatus(item);
+        const loc = locationById[item.LocationId];
+        return `<tr>
+          <td><span class="badge ${StockTypes.toBadgeClass(item.StockType)}">${StockTypes.toDisplayName(item.StockType)}</span></td>
+          <td><strong>${escapeHtml(item.ItemName)}</strong></td>
+          <td>${escapeHtml(item.Specification)}</td>
+          <td><span class="badge bg-secondary">${escapeHtml(item.Category)}</span></td>
+          <td class="text-end"><strong>${item.Quantity}</strong></td>
+          <td>${escapeHtml(item.Unit)}</td>
+          <td>${item.ExpirationDate ? fmtDate(item.ExpirationDate) : '<span class="text-muted">無期限</span>'}</td>
+          <td><span class="badge" style="${loc ? locationBadgeStyle(loc.Id) : ''}"><i class="bi bi-building"></i> ${escapeHtml(loc?.LocationName)}</span></td>
+          <td class="text-end">${item.SafetyStock}</td>
+          <td><span class="badge ${status.cls}">${status.text}</span></td>
+          <td>
+            ${canEdit ? `<button class="btn btn-sm btn-warning" onclick="openEdit(${item.Id})" title="編輯"><i class="bi bi-pencil"></i></button>
+            <a href="transfer.html?supplyItemId=${item.Id}" class="btn btn-sm btn-primary" title="轉移"><i class="bi bi-arrow-left-right"></i></a>
+            <button class="btn btn-sm btn-danger" onclick="deactivateItem(${item.Id})" title="停用"><i class="bi bi-trash"></i></button>` : ''}
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function populateLocationSelects(selectedId) {
+      const opts = allLocations.filter(l => l.IsActive).map(l => `<option value="${l.Id}">${escapeHtml(l.LocationName)}</option>`).join('');
+      document.getElementById('filterLocation').innerHTML = '<option value="">全部據點</option>' + opts;
+      document.getElementById('f-LocationId').innerHTML = '<option value="">請選擇據點</option>' + opts;
+      if (selectedId) document.getElementById('f-LocationId').value = selectedId;
+    }
+
+    function populateCategoryFilter() {
+      const cats = [...new Set(allItems.filter(i => i.IsActive).map(i => i.Category))].sort();
+      document.getElementById('filterCategory').innerHTML = '<option value="">全部種類</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    }
+
+    function renderStockTypeTabs() {
+      const tabs = [['', '全部'], ['NoExpiry', '無效期物資'], ['HasExpiry', '有效期物資'], ['Frozen', '冷凍食品']];
+      document.getElementById('stockTypeTabs').innerHTML = tabs.map(([val, label]) =>
+        `<button type="button" class="btn btn-sm ${currentStockType === val ? 'btn-dark' : 'btn-outline-dark'}" data-val="${val}">${label}</button>`
+      ).join('');
+      document.querySelectorAll('#stockTypeTabs button').forEach(btn => {
+        btn.addEventListener('click', () => { currentStockType = btn.dataset.val; renderStockTypeTabs(); applyFilters(); });
+      });
+    }
+
+    function updateExpirationVisibility() {
+      const checked = document.querySelector('input[name="StockType"]:checked');
+      const wrap = document.getElementById('expirationWrap');
+      const input = document.getElementById('f-ExpirationDate');
+      if (checked && checked.value === 'NoExpiry') {
+        wrap.style.display = 'none';
+        input.required = false;
+      } else {
+        wrap.style.display = '';
+        input.required = true;
+      }
+    }
+    document.querySelectorAll('input[name="StockType"]').forEach(r => r.addEventListener('change', updateExpirationVisibility));
+
+    function openCreate() {
+      document.getElementById('itemModalTitle').textContent = '新增物資';
+      document.getElementById('itemForm').reset();
+      document.getElementById('f-Id').value = '';
+      document.getElementById('stockHasExpiry').checked = true;
+      updateExpirationVisibility();
+      populateLocationSelects();
+      new bootstrap.Modal(document.getElementById('itemModal')).show();
+    }
+
+    window.openEdit = function (id) {
+      const item = allItems.find(i => i.Id === id);
+      if (!item) return;
+      document.getElementById('itemModalTitle').textContent = '編輯物資';
+      document.getElementById('f-Id').value = item.Id;
+      document.getElementById('f-Category').value = item.Category || '';
+      document.getElementById('f-ItemName').value = item.ItemName || '';
+      document.getElementById('f-Specification').value = item.Specification || '';
+      document.getElementById('f-Quantity').value = item.Quantity;
+      document.getElementById('f-Unit').value = item.Unit || '';
+      document.getElementById('f-ExpirationDate').value = item.ExpirationDate ? fmtDate(item.ExpirationDate) : '';
+      document.getElementById('f-SafetyStock').value = item.SafetyStock;
+      document.getElementById('f-Remark').value = item.Remark || '';
+      document.querySelector(`input[name="StockType"][value="${item.StockType}"]`).checked = true;
+      updateExpirationVisibility();
+      populateLocationSelects(item.LocationId);
+      new bootstrap.Modal(document.getElementById('itemModal')).show();
+    };
+
+    window.deactivateItem = async function (id) {
+      if (!confirm('確定要停用這項物資嗎？')) return;
+      const item = allItems.find(i => i.Id === id);
+      item.IsActive = false;
+      item.UpdatedAt = new Date().toISOString();
+      await callApi('updateItem', { item });
+      showAlert('alertBox', 'success', '物資已停用！');
+      await loadData();
+    };
+
+    document.getElementById('btnSaveItem').addEventListener('click', async () => {
+      const stockType = document.querySelector('input[name="StockType"]:checked').value;
+      const expirationDate = document.getElementById('f-ExpirationDate').value || null;
+      if (stockType !== 'NoExpiry' && !expirationDate) {
+        alert('此分類必須填寫有效期限');
+        return;
+      }
+      const id = document.getElementById('f-Id').value;
+      const payload = {
+        Category: document.getElementById('f-Category').value,
+        ItemName: document.getElementById('f-ItemName').value,
+        Specification: document.getElementById('f-Specification').value,
+        Quantity: Number(document.getElementById('f-Quantity').value),
+        Unit: document.getElementById('f-Unit').value,
+        StockType: stockType,
+        ExpirationDate: stockType === 'NoExpiry' ? null : expirationDate,
+        LocationId: Number(document.getElementById('f-LocationId').value),
+        SafetyStock: Number(document.getElementById('f-SafetyStock').value),
+        Remark: document.getElementById('f-Remark').value,
+        UpdatedAt: new Date().toISOString()
+      };
+      if (id) {
+        payload.Id = Number(id);
+        await callApi('updateItem', { item: payload });
+        showAlert('alertBox', 'success', '物資更新成功！');
+      } else {
+        await callApi('createItem', { item: payload });
+        showAlert('alertBox', 'success', '物資新增成功！');
+      }
+      bootstrap.Modal.getInstance(document.getElementById('itemModal')).hide();
+      await loadData();
+    });
+
+    document.getElementById('filterLocation').addEventListener('change', applyFilters);
+    document.getElementById('filterCategory').addEventListener('change', applyFilters);
+    document.getElementById('btnResetFilter').addEventListener('click', () => {
+      document.getElementById('filterLocation').value = '';
+      document.getElementById('filterCategory').value = '';
+      applyFilters();
+    });
+    document.getElementById('btnNewItem').addEventListener('click', openCreate);
+
+    async function loadData() {
+      const [locRes, itemRes] = await Promise.all([callApi('getLocations'), callApi('getItems')]);
+      allLocations = locRes.data || [];
+      allItems = itemRes.data || [];
+      populateLocationSelects();
+      populateCategoryFilter();
+      applyFilters();
+
+      const params = new URLSearchParams(location.search);
+      const locationId = params.get('locationId');
+      if (locationId) document.getElementById('filterLocation').value = locationId;
+      applyFilters();
+    }
+
+    (async function () {
+      if (!user) return;
+      renderNav('items');
+      if (canEdit) document.getElementById('btnNewItem').style.display = '';
+      renderStockTypeTabs();
+      await loadData();
+    })();
+  </script>
+</body>
+</html>
