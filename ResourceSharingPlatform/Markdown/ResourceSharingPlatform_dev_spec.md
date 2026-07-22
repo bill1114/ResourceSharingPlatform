@@ -1380,5 +1380,5 @@ ALTER TABLE UserAccount ADD CONSTRAINT FK_UserAccount_SupplyLocation FOREIGN KEY
 
 1. **建立時自動合併**（`SupplyItemController.Create`）：新增前先比對是否已有 `ItemName`、`Category`、`Specification`、`LocationId`、`ExpirationDate`、`StockType` 皆相同且啟用中的物資；找到就把數量加進既有那筆（訊息顯示「已合併數量」），找不到才新建一筆。圖片：若既有物資尚未設圖，才補上這次上傳的圖片，避免覆蓋既有圖片。
 2. **既有重複資料一次性清理**（`Data/DbInitializer.MergeDuplicateItemsAsync`，於 `Program.cs` 啟動時與 `SeedAdminAsync` 一起呼叫）：依同一組比對鍵把現有重複的啟用中物資分組，同組只留最早建立的一筆、其餘數量併入、其餘停用。此方法是 idempotent 的，沒有重複資料時完全不動作，可以安全地每次啟動都執行。
-3. **依物資名稱統計**（`SupplyItemController.Index` + `Models/ViewModels/SupplyItemSummaryViewModel.cs`）：在目前篩選/搜尋結果之上，依 `ItemName` 分組計算跨據點總量、據點數、是否含低庫存、最近效期，顯示在物資管理頁明細表格上方一個可收合的「依物資統計」卡片，讓同名物資即使分散在多筆資料/多據點，也能立即看到彙總數字。
+3. **依物資名稱統計**（`SupplyItemController.Index` + `Models/ViewModels/SupplyItemSummaryViewModel.cs`）：在目前篩選/搜尋結果之上，依 `ItemName` 分組計算跨據點總量、分布據點數（`LocationCount`，去重複計算 `LocationId` 的數量，不是資料筆數——同據點若因效期不同而有多筆資料，仍只算 1 個據點）、是否含低庫存、最近效期，顯示在物資管理頁明細表格上方一個可收合的「依物資統計」卡片，讓同名物資即使分散在多筆資料/多據點，也能立即看到彙總數字。
 
