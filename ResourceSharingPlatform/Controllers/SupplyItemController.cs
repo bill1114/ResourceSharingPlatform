@@ -53,7 +53,11 @@ namespace ResourceSharingPlatform.Controllers
                     (x.Remark != null && x.Remark.Contains(keyword)));
             }
 
-            var items = await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
+            var items = (await query.ToListAsync())
+                .OrderBy(x => x.ExpirationDate.HasValue ? 0 : 1)
+                .ThenBy(x => x.ExpirationDate)
+                .ThenByDescending(x => x.CreatedAt)
+                .ToList();
 
             // For filter dropdowns
             ViewBag.Locations = new SelectList(
@@ -85,7 +89,9 @@ namespace ResourceSharingPlatform.Controllers
                     HasLowStock = g.Any(x => x.Quantity <= x.SafetyStock),
                     NearestExpirationDate = g.Where(x => x.ExpirationDate.HasValue).Select(x => x.ExpirationDate).OrderBy(d => d).FirstOrDefault()
                 })
-                .OrderByDescending(x => x.TotalQuantity)
+                .OrderBy(x => x.NearestExpirationDate.HasValue ? 0 : 1)
+                .ThenBy(x => x.NearestExpirationDate)
+                .ThenByDescending(x => x.TotalQuantity)
                 .ToList();
 
             return View(items);
