@@ -1,11 +1,14 @@
 @model IEnumerable<ResourceSharingPlatform.Models.SupplyItem>
 @using ResourceSharingPlatform.Models
 
+@using ResourceSharingPlatform.Models.ViewModels
 @{
     ViewData["Title"] = "物資管理";
     var locationId = ViewBag.Locations?.SelectedValue as int?;
     var selectedCategory = ViewBag.SelectedCategory as string;
     var selectedStockType = ViewBag.SelectedStockType as string;
+    var keyword = ViewBag.Keyword as string;
+    var itemSummary = ViewBag.ItemSummary as List<SupplyItemSummaryViewModel>;
 }
 
 <div class="container-fluid mt-4">
@@ -18,12 +21,12 @@
 
     <!-- 分類快速切換 -->
     <div class="btn-group mb-3" role="group">
-        <a asp-action="Index" asp-route-locationId="@locationId" asp-route-category="@selectedCategory"
-           class="btn btn-sm @(string.IsNullOrEmpty(selectedStockType) ? "btn-dark" : "btn-outline-dark")">全部</a>
+        <a asp-action="Index" asp-route-locationId="@locationId" asp-route-category="@selectedCategory" asp-route-keyword="@keyword"
+           class="btn btn-sm @(string.IsNullOrEmpty(selectedStockType) ? "btn-primary" : "btn-outline-primary")">全部</a>
         @foreach (var st in StockTypes.All)
         {
-            <a asp-action="Index" asp-route-locationId="@locationId" asp-route-category="@selectedCategory" asp-route-stockType="@st"
-               class="btn btn-sm @(selectedStockType == st ? "btn-dark" : "btn-outline-dark")">@StockTypes.ToDisplayName(st)</a>
+            <a asp-action="Index" asp-route-locationId="@locationId" asp-route-category="@selectedCategory" asp-route-stockType="@st" asp-route-keyword="@keyword"
+               class="btn btn-sm @(selectedStockType == st ? "btn-primary" : "btn-outline-primary")">@StockTypes.ToDisplayName(st)</a>
         }
     </div>
 
@@ -36,13 +39,17 @@
             <form method="get" asp-action="Index">
                 <input type="hidden" name="stockType" value="@selectedStockType" />
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label">關鍵字</label>
+                        <input type="text" name="keyword" value="@keyword" class="form-control" placeholder="物資名稱、規格、種類、備註" />
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">據點</label>
                         <select name="locationId" class="form-select" asp-items="ViewBag.Locations">
                             <option value="">全部據點</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">種類</label>
                         <select name="category" class="form-select">
                             <option value="">全部種類</option>
@@ -55,7 +62,7 @@
                             }
                         </select>
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
+                    <div class="col-md-3 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-search"></i> 搜尋
                         </button>
@@ -67,6 +74,50 @@
             </form>
         </div>
     </div>
+
+    @if (itemSummary != null && itemSummary.Any())
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#itemSummaryBody">
+                <span><i class="bi bi-bar-chart"></i> 依物資統計（跨據點加總，共 @itemSummary.Count 種品項）</span>
+                <i class="bi bi-chevron-up"></i>
+            </div>
+            <div class="collapse show" id="itemSummaryBody">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>物資名稱</th>
+                                    <th>據點數</th>
+                                    <th>總數量</th>
+                                    <th>最近效期</th>
+                                    <th>提醒</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in itemSummary)
+                                {
+                                    <tr>
+                                        <td><strong>@s.ItemName</strong></td>
+                                        <td>@s.LocationCount</td>
+                                        <td>@s.TotalQuantity @s.Unit</td>
+                                        <td>@(s.NearestExpirationDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                        <td>
+                                            @if (s.HasLowStock)
+                                            {
+                                                <span class="badge bg-danger">含低庫存</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     @if (!Model.Any())
     {

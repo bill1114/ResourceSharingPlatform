@@ -22,15 +22,28 @@ namespace ResourceSharingPlatform.Controllers
         }
 
         // GET: SupplyTransfer
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? keyword)
         {
-            var logs = await _context.SupplyTransferLogs
+            var query = _context.SupplyTransferLogs
                 .Include(x => x.SupplyItem)
                 .Include(x => x.FromLocation)
                 .Include(x => x.ToLocation)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    (x.SupplyItem != null && x.SupplyItem.ItemName.Contains(keyword)) ||
+                    (x.Operator != null && x.Operator.Contains(keyword)) ||
+                    (x.Remark != null && x.Remark.Contains(keyword)));
+            }
+
+            var logs = await query
                 .OrderByDescending(x => x.TransferTime)
                 .Take(100)
                 .ToListAsync();
+
+            ViewBag.Keyword = keyword;
 
             return View(logs);
         }

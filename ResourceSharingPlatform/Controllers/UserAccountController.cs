@@ -23,12 +23,21 @@ namespace ResourceSharingPlatform.Controllers
         }
 
         // GET: UserAccount
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? keyword)
         {
-            var users = await _context.UserAccounts
-                .Include(x => x.Location)
-                .OrderBy(x => x.UserName)
-                .ToListAsync();
+            var query = _context.UserAccounts.Include(x => x.Location).AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    x.UserName.Contains(keyword) ||
+                    (x.DisplayName != null && x.DisplayName.Contains(keyword)));
+            }
+
+            var users = await query.OrderBy(x => x.UserName).ToListAsync();
+
+            ViewBag.Keyword = keyword;
+
             return View(users);
         }
 

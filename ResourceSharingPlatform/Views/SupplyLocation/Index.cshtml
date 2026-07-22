@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "據點管理";
+    var keyword = ViewBag.Keyword as string;
 }
 
 <div class="container-fluid mt-4">
@@ -12,10 +13,34 @@
         </a>
     </div>
 
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-funnel"></i> 篩選條件
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">關鍵字</label>
+                        <input type="text" name="keyword" value="@keyword" class="form-control" placeholder="據點名稱、地址、聯絡人、電話" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> 搜尋
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> 重設
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     @if (!Model.Any())
     {
         <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> 目前沒有據點資料，請<a asp-action="Create" class="alert-link">新增據點</a>。
+            <i class="bi bi-info-circle"></i> 沒有符合條件的據點，請<a asp-action="Create" class="alert-link">新增據點</a>或調整篩選條件。
         </div>
     }
     else

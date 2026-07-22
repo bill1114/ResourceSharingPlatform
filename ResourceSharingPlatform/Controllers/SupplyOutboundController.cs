@@ -21,15 +21,29 @@ namespace ResourceSharingPlatform.Controllers
         }
 
         // GET: SupplyOutbound
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? keyword)
         {
-            var logs = await _context.SupplyOutboundLogs
+            var query = _context.SupplyOutboundLogs
                 .Include(x => x.SupplyItem)
                 .Include(x => x.Location)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    (x.SupplyItem != null && x.SupplyItem.ItemName.Contains(keyword)) ||
+                    x.RecipientName.Contains(keyword) ||
+                    (x.RecipientContact != null && x.RecipientContact.Contains(keyword)) ||
+                    (x.Operator != null && x.Operator.Contains(keyword)) ||
+                    (x.Remark != null && x.Remark.Contains(keyword)));
+            }
+
+            var logs = await query
                 .OrderByDescending(x => x.OutboundTime)
                 .Take(100)
                 .ToListAsync();
 
+            ViewBag.Keyword = keyword;
             ViewBag.ExpiringItems = await GetExpiringItemsAsync(GetMyLocationIdIfRestricted());
 
             return View(logs);

@@ -61,5 +61,6 @@ app.MapControllerRoute(
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
 await DbInitializer.SeedAdminAsync(app.Services);
+await DbInitializer.MergeDuplicateItemsAsync(app.Services);
 
 app.Run();

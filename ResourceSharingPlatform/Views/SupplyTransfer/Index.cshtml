@@ -6,6 +6,7 @@
     var canCreate = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Cadre);
     var isAdmin = User.IsInRole(Roles.Admin);
     int? myLocationId = int.TryParse(User.FindFirst("LocationId")?.Value, out var parsedLocationId) ? parsedLocationId : null;
+    var keyword = ViewBag.Keyword as string;
 }
 
 <div class="container-fluid mt-4">
@@ -26,10 +27,34 @@
         </div>
     }
 
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-funnel"></i> 篩選條件
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">關鍵字</label>
+                        <input type="text" name="keyword" value="@keyword" class="form-control" placeholder="物資名稱、操作人員、備註" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> 搜尋
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> 重設
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     @if (!Model.Any())
     {
         <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> 目前沒有轉移紀錄。
+            <i class="bi bi-info-circle"></i> 沒有符合條件的轉移紀錄。
         </div>
     }
     else

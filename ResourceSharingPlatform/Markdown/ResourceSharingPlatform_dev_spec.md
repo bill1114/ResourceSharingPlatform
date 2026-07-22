@@ -1352,3 +1352,33 @@ ALTER TABLE UserAccount ADD CONSTRAINT FK_UserAccount_SupplyLocation FOREIGN KEY
 - **權限驗證**：`SupplyOutboundController` 的 Create（GET/POST）與 `SupplyOutboundService.IssueAsync` 都會檢查所選物資確實屬於所選據點，且幹部／社工只能對自己所屬據點執行出庫，伺服器端強制驗證（不只是前端隱藏）
 - 「即期／已過期物資，建議優先出庫」提醒區塊也會依據使用者所屬據點篩選（管理人員看全部，幹部／社工只看自己據點）
 
+---
+
+## 31. 全站關鍵字搜尋與同品項統計
+
+### 31.1 分類快速切換鈕配色
+
+`Views/SupplyItem/Index.cshtml` 的「全部／無效期物資／有效期物資／冷凍食品」切換鈕，選中樣式由 `btn-dark`/`btn-outline-dark` 改為 `btn-primary`/`btn-outline-primary`，與全站主色一致。
+
+### 31.2 全站關鍵字搜尋盤點
+
+盤點結果：除了「物資管理」原本就有的據點/種類/分類下拉篩選，其餘清單頁完全沒有任何篩選功能。統一比照「用 query string `keyword` 觸發伺服器端 `Contains` 查詢」的寫法補上：
+
+| 頁面 | 搜尋欄位 |
+|---|---|
+| `SupplyItem/Index` | 物資名稱、規格、種類、備註 |
+| `SupplyLocation/Index` | 據點名稱、地址、聯絡人、電話 |
+| `SupplyTransfer/Index` | 物資名稱、操作人員、備註 |
+| `SupplyOutbound/Index` | 物資名稱、領用人姓名、聯絡方式、操作人員、備註 |
+| `UserAccount/Index` | 帳號、顯示名稱 |
+
+### 31.3 同品項重複資料：合併與統計
+
+**問題**：「新增物資」原本永遠新建一筆資料，即使同據點已存在名稱/種類/規格/分類/效期完全相同的物資，也會產生重複列，庫存數字因此被拆散、無法一眼看出真實總量。
+
+**設計**：
+
+1. **建立時自動合併**（`SupplyItemController.Create`）：新增前先比對是否已有 `ItemName`、`Category`、`Specification`、`LocationId`、`ExpirationDate`、`StockType` 皆相同且啟用中的物資；找到就把數量加進既有那筆（訊息顯示「已合併數量」），找不到才新建一筆。圖片：若既有物資尚未設圖，才補上這次上傳的圖片，避免覆蓋既有圖片。
+2. **既有重複資料一次性清理**（`Data/DbInitializer.MergeDuplicateItemsAsync`，於 `Program.cs` 啟動時與 `SeedAdminAsync` 一起呼叫）：依同一組比對鍵把現有重複的啟用中物資分組，同組只留最早建立的一筆、其餘數量併入、其餘停用。此方法是 idempotent 的，沒有重複資料時完全不動作，可以安全地每次啟動都執行。
+3. **依物資名稱統計**（`SupplyItemController.Index` + `Models/ViewModels/SupplyItemSummaryViewModel.cs`）：在目前篩選/搜尋結果之上，依 `ItemName` 分組計算跨據點總量、據點數、是否含低庫存、最近效期，顯示在物資管理頁明細表格上方一個可收合的「依物資統計」卡片，讓同名物資即使分散在多筆資料/多據點，也能立即看到彙總數字。
+

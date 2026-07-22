@@ -6,6 +6,7 @@
     var expiringItems = ViewBag.ExpiringItems as List<SupplyItem>;
     var isAdmin = User.IsInRole(Roles.Admin);
     var hasLocation = int.TryParse(User.FindFirst("LocationId")?.Value, out _);
+    var keyword = ViewBag.Keyword as string;
 }
 
 <div class="container-fluid mt-4">
@@ -59,10 +60,34 @@
         </div>
     }
 
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-funnel"></i> 篩選條件
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">關鍵字</label>
+                        <input type="text" name="keyword" value="@keyword" class="form-control" placeholder="物資名稱、領用人姓名、聯絡方式、操作人員、備註" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> 搜尋
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> 重設
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     @if (!Model.Any())
     {
         <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> 目前沒有出庫紀錄，請<a asp-action="Create" class="alert-link">建立物資出庫</a>。
+            <i class="bi bi-info-circle"></i> 沒有符合條件的出庫紀錄，請<a asp-action="Create" class="alert-link">建立物資出庫</a>。
         </div>
     }
     else

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
+using ResourceSharingPlatform.Models.ViewModels;
 
 namespace ResourceSharingPlatform.Controllers
 {
@@ -22,7 +23,7 @@ namespace ResourceSharingPlatform.Controllers
         }
 
         // GET: SupplyItem
-        public async Task<IActionResult> Index(int? locationId, string? category, string? stockType)
+        public async Task<IActionResult> Index(int? locationId, string? category, string? stockType, string? keyword)
         {
             var query = _context.SupplyItems
                 .Include(s => s.Location)
@@ -43,6 +44,15 @@ namespace ResourceSharingPlatform.Controllers
                 query = query.Where(x => x.StockType == stockType);
             }
 
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    x.ItemName.Contains(keyword) ||
+                    (x.Specification != null && x.Specification.Contains(keyword)) ||
+                    x.Category.Contains(keyword) ||
+                    (x.Remark != null && x.Remark.Contains(keyword)));
+            }
+
             var items = await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
 
             // For filter dropdowns
@@ -61,6 +71,22 @@ namespace ResourceSharingPlatform.Controllers
 
             ViewBag.SelectedCategory = category;
             ViewBag.SelectedStockType = stockType;
+            ViewBag.Keyword = keyword;
+
+            var today = DateTime.Today;
+            ViewBag.ItemSummary = items
+                .GroupBy(x => x.ItemName)
+                .Select(g => new SupplyItemSummaryViewModel
+                {
+                    ItemName = g.Key,
+                    LocationCount = g.Select(x => x.LocationId).Distinct().Count(),
+                    TotalQuantity = g.Sum(x => x.Quantity),
+                    Unit = g.First().Unit,
+                    HasLowStock = g.Any(x => x.Quantity <= x.SafetyStock),
+                    NearestExpirationDate = g.Where(x => x.ExpirationDate.HasValue).Select(x => x.ExpirationDate).OrderBy(d => d).FirstOrDefault()
+                })
+                .OrderByDescending(x => x.TotalQuantity)
+                .ToList();
 
             return View(items);
         }
@@ -124,6 +150,30 @@ namespace ResourceSharingPlatform.Controllers
 
             if (ModelState.IsValid)
             {
+                var existingMatch = await _context.SupplyItems.FirstOrDefaultAsync(x =>
+                    x.IsActive &&
+                    x.LocationId == item.LocationId &&
+                    x.ItemName == item.ItemName &&
+                    x.Category == item.Category &&
+                    x.Specification == item.Specification &&
+                    x.StockType == item.StockType &&
+                    x.ExpirationDate == item.ExpirationDate);
+
+                if (existingMatch != null)
+                {
+                    existingMatch.Quantity += item.Quantity;
+                    existingMatch.UpdatedAt = DateTime.Now;
+
+                    if (imageFile != null && imageFile.Length > 0 && string.IsNullOrEmpty(existingMatch.ImagePath))
+                    {
+                        existingMatch.ImagePath = await SaveImageAsync(imageFile);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = $"據點已有相同物資，已合併數量，目前數量為 {existingMatch.Quantity} {existingMatch.Unit}";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 if (imageFile != null && imageFile.Length > 0)
                 {
                     item.ImagePath = await SaveImageAsync(imageFile);

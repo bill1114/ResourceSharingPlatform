@@ -16,12 +16,23 @@ namespace ResourceSharingPlatform.Controllers
         }
 
         // GET: SupplyLocation
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? keyword)
         {
-            var locations = await _context.SupplyLocations
-                .Where(x => x.IsActive)
-                .OrderByDescending(x => x.CreatedAt)
-                .ToListAsync();
+            var query = _context.SupplyLocations.Where(x => x.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    x.LocationName.Contains(keyword) ||
+                    (x.Address != null && x.Address.Contains(keyword)) ||
+                    (x.ContactPerson != null && x.ContactPerson.Contains(keyword)) ||
+                    (x.Phone != null && x.Phone.Contains(keyword)));
+            }
+
+            var locations = await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
+
+            ViewBag.Keyword = keyword;
+
             return View(locations);
         }
 
