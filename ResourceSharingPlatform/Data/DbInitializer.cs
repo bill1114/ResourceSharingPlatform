@@ -76,5 +76,28 @@ namespace ResourceSharingPlatform.Data
                 await context.SaveChangesAsync();
             }
         }
+
+        // Ensures a single LineNotificationSettings row exists (disabled by default,
+        // no credentials) so the settings page always has something to edit.
+        public static async Task EnsureLineSettingsAsync(IServiceProvider services)
+        {
+            using var scope = services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            if (await context.LineNotificationSettings.AnyAsync())
+            {
+                return;
+            }
+
+            context.LineNotificationSettings.Add(new LineNotificationSettings
+            {
+                IsEnabled = false,
+                NotifyLowStock = true,
+                NotifyExpiringSoon = true,
+                NotifyExpired = true
+            });
+
+            await context.SaveChangesAsync();
+        }
     }
 }

@@ -44,35 +44,40 @@
                                     <i class="bi bi-buildings"></i> 據點管理
                                 </a>
                             </li>
-                            @if (User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Cadre))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-white" asp-controller="SupplyTransfer" asp-action="Create">
-                                        <i class="bi bi-arrow-left-right"></i> 物資轉移
-                                    </a>
-                                </li>
-                            }
-                            <li class="nav-item">
-                                <a class="nav-link text-white" asp-controller="SupplyTransfer" asp-action="Index">
-                                    <i class="bi bi-list-ul"></i> 轉移紀錄
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-arrow-left-right"></i> 物資異動
                                 </a>
+                                <ul class="dropdown-menu">
+                                    @if (User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Cadre))
+                                    {
+                                        <li><a class="dropdown-item" asp-controller="SupplyTransfer" asp-action="Create"><i class="bi bi-arrow-left-right"></i> 物資轉移</a></li>
+                                    }
+                                    <li><a class="dropdown-item" asp-controller="SupplyTransfer" asp-action="Index"><i class="bi bi-list-ul"></i> 轉移紀錄</a></li>
+                                    <li><a class="dropdown-item" asp-controller="SupplyOutbound" asp-action="Create"><i class="bi bi-box-arrow-up"></i> 物資出庫</a></li>
+                                    <li><a class="dropdown-item" asp-controller="SupplyOutbound" asp-action="Index"><i class="bi bi-list-ul"></i> 出庫紀錄</a></li>
+                                    <li><a class="dropdown-item" asp-controller="SupplyDonation" asp-action="Create"><i class="bi bi-gift"></i> 物資捐贈</a></li>
+                                    <li><a class="dropdown-item" asp-controller="SupplyDonation" asp-action="Index"><i class="bi bi-award"></i> 捐贈紀錄</a></li>
+                                </ul>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" asp-controller="SupplyOutbound" asp-action="Create">
-                                    <i class="bi bi-box-arrow-up"></i> 物資出庫
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-graph-up"></i> 分析報表
                                 </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" asp-controller="SupplyOutbound" asp-action="Index">
-                                    <i class="bi bi-list-ul"></i> 出庫紀錄
-                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="SupplyOutbound" asp-action="RecipientAnalysis"><i class="bi bi-graph-up"></i> 領取分析</a></li>
+                                </ul>
                             </li>
                             @if (User.IsInRole(Roles.Admin))
                             {
-                                <li class="nav-item">
-                                    <a class="nav-link text-white" asp-controller="UserAccount" asp-action="Index">
-                                        <i class="bi bi-people"></i> 帳號管理
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-gear"></i> 系統管理
                                     </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" asp-controller="UserAccount" asp-action="Index"><i class="bi bi-people"></i> 帳號管理</a></li>
+                                        <li><a class="dropdown-item" asp-controller="LineNotification" asp-action="Settings"><i class="bi bi-chat-dots"></i> LINE 通知設定</a></li>
+                                    </ul>
                                 </li>
                             }
                         </ul>

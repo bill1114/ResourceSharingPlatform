@@ -1,0 +1,152 @@
+@model ResourceSharingPlatform.Models.ViewModels.LineNotificationSettingsViewModel
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "LINE 通知設定";
+    bool hasToken = ViewBag.HasToken;
+    bool hasSecret = ViewBag.HasSecret;
+    DateTime? updatedAt = ViewBag.UpdatedAt;
+    var updatedBy = ViewBag.UpdatedBy as string;
+    var previewItems = ViewBag.PreviewItems as List<SupplyItem>;
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-chat-dots"></i> LINE 通知設定</h2>
+    <hr />
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>⚠ 尚未串接真實 LINE Messaging API</strong>，此頁目前僅供設定保存與通知內容預覽，「測試發送」不會真的傳送任何訊息。之後要正式串接時，只需要填入真實的 Channel Access Token / Secret 並接上 LINE 的 Webhook。
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <i class="bi bi-gear"></i> 基本設定
+                </div>
+                <div class="card-body">
+                    <form asp-action="Settings" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input asp-for="IsEnabled" class="form-check-input" />
+                            <label asp-for="IsEnabled" class="form-check-label">啟用 LINE 被動式通報</label>
+                            <div class="form-text">目前僅為介面預覽，即使啟用也不會真的發送訊息。</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ChannelAccessToken" class="form-label">Channel Access Token</label>
+                            <input asp-for="ChannelAccessToken" class="form-control" placeholder="@(hasToken ? "已設定，留空表示不變更" : "尚未設定")" />
+                            <span asp-validation-for="ChannelAccessToken" class="text-danger"></span>
+                            <div class="form-text">@(hasToken ? "目前已儲存一組 Token（不顯示內容）" : "目前尚未設定")</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ChannelSecret" class="form-label">Channel Secret</label>
+                            <input asp-for="ChannelSecret" type="password" class="form-control" placeholder="@(hasSecret ? "已設定，留空表示不變更" : "尚未設定")" />
+                            <span asp-validation-for="ChannelSecret" class="text-danger"></span>
+                            <div class="form-text">@(hasSecret ? "目前已儲存一組 Secret（不顯示內容）" : "目前尚未設定")</div>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase mt-4">通知觸發條件</h6>
+                        <div class="form-check mb-2">
+                            <input asp-for="NotifyLowStock" class="form-check-input" />
+                            <label asp-for="NotifyLowStock" class="form-check-label">庫存低於安全庫存時</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="NotifyExpiringSoon" class="form-check-input" />
+                            <label asp-for="NotifyExpiringSoon" class="form-check-label">物資即將於 30 天內過期時</label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input asp-for="NotifyExpired" class="form-check-input" />
+                            <label asp-for="NotifyExpired" class="form-check-label">物資已過期時</label>
+                        </div>
+
+                        @if (updatedAt.HasValue)
+                        {
+                            <p class="text-muted small">上次更新：@updatedAt.Value.ToString("yyyy-MM-dd HH:mm") @updatedBy</p>
+                        }
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 儲存設定
+                            </button>
+                        </div>
+                    </form>
+
+                    <form asp-action="TestSend" method="post" class="mt-2">
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-send"></i> 測試發送（模擬，不會真的傳送）
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> 關於被動式通報</h6>
+                <ul class="mb-0">
+                    <li>系統會依照上面勾選的條件，被動偵測符合條件的物資</li>
+                    <li>右側／下方會即時預覽「如果現在是啟用狀態，會通知哪些項目」</li>
+                    <li>正式串接後，這些項目就會實際推播到 LINE 官方帳號</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-2">
+        <div class="card-header bg-light">
+            <i class="bi bi-eye"></i> 目前符合通知條件的項目預覽（共 @(previewItems?.Count ?? 0) 項）
+        </div>
+        <div class="card-body">
+            @if (previewItems == null || !previewItems.Any())
+            {
+                <p class="text-muted mb-0">目前沒有符合任何已勾選觸發條件的物資。</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>物資</th>
+                                <th>據點</th>
+                                <th>數量</th>
+                                <th>安全庫存</th>
+                                <th>有效期限</th>
+                                <th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in previewItems)
+                            {
+                                <tr>
+                                    <td>@item.ItemName</td>
+                                    <td><span class="badge" style="@LocationColors.Style(item.LocationId)">@item.Location?.LocationName</span></td>
+                                    <td>@item.Quantity @item.Unit</td>
+                                    <td>@item.SafetyStock</td>
+                                    <td>@item.ExpirationDate?.ToString("yyyy-MM-dd")</td>
+                                    <td><span class="badge @item.GetStatusBadgeClass()">@item.GetStatus()</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

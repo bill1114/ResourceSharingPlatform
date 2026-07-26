@@ -38,6 +38,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<SupplyTransferService>();
 builder.Services.AddScoped<SupplyOutboundService>();
+builder.Services.AddScoped<SupplyDonationService>();
 
 var app = builder.Build();
 
@@ -62,5 +63,6 @@ app.MapControllerRoute(
 
 await DbInitializer.SeedAdminAsync(app.Services);
 await DbInitializer.MergeDuplicateItemsAsync(app.Services);
+await DbInitializer.EnsureLineSettingsAsync(app.Services);
 
 app.Run();

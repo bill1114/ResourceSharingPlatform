@@ -49,6 +49,47 @@ namespace ResourceSharingPlatform.Controllers
             return View(logs);
         }
 
+        // GET: SupplyOutbound/RecipientAnalysis
+        public async Task<IActionResult> RecipientAnalysis(string? keyword)
+        {
+            const int FrequentThreshold = 3;
+
+            var query = _context.SupplyOutboundLogs.Include(x => x.SupplyItem).AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x => x.RecipientName.Contains(keyword));
+            }
+
+            var logs = await query.ToListAsync();
+
+            var summary = logs
+                .GroupBy(x => (x.RecipientName, Contact: x.RecipientContact ?? string.Empty))
+                .Select(g =>
+                {
+                    var itemBreakdown = string.Join("、", g
+                        .GroupBy(x => new { x.SupplyItem?.ItemName, x.SupplyItem?.Unit })
+                        .Select(ig => $"{ig.Key.ItemName}（{ig.Count()}次，共{ig.Sum(x => x.OutboundQuantity)}{ig.Key.Unit}）"));
+
+                    return new RecipientSummaryViewModel
+                    {
+                        RecipientName = g.Key.RecipientName,
+                        RecipientContact = string.IsNullOrEmpty(g.Key.Contact) ? null : g.Key.Contact,
+                        PickupCount = g.Count(),
+                        IsFrequent = g.Count() >= FrequentThreshold,
+                        ItemBreakdown = itemBreakdown,
+                        FirstPickupDate = g.Min(x => x.OutboundTime),
+                        LastPickupDate = g.Max(x => x.OutboundTime)
+                    };
+                })
+                .OrderByDescending(x => x.PickupCount)
+                .ToList();
+
+            ViewBag.Keyword = keyword;
+
+            return View(summary);
+        }
+
         // GET: SupplyOutbound/Create
         public async Task<IActionResult> Create(int? supplyItemId, int? locationId)
         {

@@ -1,0 +1,159 @@
+@model ResourceSharingPlatform.Models.ViewModels.DonationViewModel
+@using ResourceSharingPlatform.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "物資捐贈登記";
+    var itemOptions = (List<SupplyItem>)ViewBag.Items;
+    int? lockedLocationId = ViewBag.LockedLocationId;
+    var lockedLocationName = lockedLocationId.HasValue
+        ? ((SelectList)ViewBag.Locations).FirstOrDefault(x => x.Value == lockedLocationId.Value.ToString())?.Text
+        : null;
+}
+
+@functions {
+    string ItemOptionText(SupplyItem opt) => opt.ItemName + " (" + (opt.Location?.LocationName ?? "") + ") - 現有 " + opt.Quantity + " " + opt.Unit;
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-gift"></i> 物資捐贈登記</h2>
+    <hr />
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="mb-3">
+                            <label class="form-label">據點 <span class="text-danger">*</span></label>
+                            @if (lockedLocationId.HasValue)
+                            {
+                                <input type="text" class="form-control" value="@lockedLocationName" disabled />
+                                <input type="hidden" name="LocationId" id="LocationId" value="@lockedLocationId" />
+                                <div class="form-text">您的帳號僅能對所屬據點登記捐贈。</div>
+                            }
+                            else
+                            {
+                                <select asp-for="LocationId" asp-items="ViewBag.Locations" id="LocationId" class="form-select">
+                                    <option value="">請選擇據點</option>
+                                </select>
+                            }
+                            <span asp-validation-for="LocationId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="SupplyItemId" class="form-label">選擇物資 <span class="text-danger">*</span></label>
+                            <select asp-for="SupplyItemId" id="itemSelect" class="form-select">
+                                <option value="">請選擇物資</option>
+                                @foreach (var opt in itemOptions)
+                                {
+                                    <option value="@opt.Id" data-location-id="@opt.LocationId" selected="@(opt.Id == Model.SupplyItemId)">@ItemOptionText(opt)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SupplyItemId" class="text-danger"></span>
+                            <div class="form-text">若要捐贈的物資尚未建檔，請先到「物資管理」新增該項物資（數量可先填 0）。</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DonationQuantity" class="form-label">捐贈數量 <span class="text-danger">*</span></label>
+                            <input asp-for="DonationQuantity" class="form-control" type="number" min="1" placeholder="請輸入捐贈數量" />
+                            <span asp-validation-for="DonationQuantity" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DonorName" class="form-label">捐贈者姓名 <span class="text-danger">*</span></label>
+                                    <input asp-for="DonorName" class="form-control" placeholder="例如：陳先生 或 OO愛心協會" />
+                                    <span asp-validation-for="DonorName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DonorContact" class="form-label">捐贈者聯絡方式</label>
+                                    <input asp-for="DonorContact" class="form-control" placeholder="例如：手機或 Email" />
+                                    <span asp-validation-for="DonorContact" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">操作人員</label>
+                            <input class="form-control" value="@(User.FindFirst("DisplayName")?.Value ?? User.Identity?.Name)" disabled />
+                            <div class="form-text">系統會自動記錄目前登入帳號為操作人員。</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Remark" class="form-label">備註</label>
+                            <textarea asp-for="Remark" class="form-control" rows="3" placeholder="其他說明"></textarea>
+                            <span asp-validation-for="Remark" class="text-danger"></span>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> 確認登記
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回紀錄
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> 捐贈登記說明</h6>
+                <ul class="mb-0">
+                    <li>先選擇據點，物資選單會自動只顯示該據點的物資</li>
+                    <li>登記後會直接增加該物資的庫存數量</li>
+                    <li>所有捐贈紀錄都會累計進「捐物者芳名錄」統計</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        (function () {
+            var locationInput = document.getElementById('LocationId');
+            var itemSelect = document.getElementById('itemSelect');
+
+            function filterItems() {
+                var locVal = locationInput ? locationInput.value : '';
+                var currentValid = false;
+
+                itemSelect.querySelectorAll('option[data-location-id]').forEach(function (opt) {
+                    var show = !locVal || opt.getAttribute('data-location-id') === locVal;
+                    opt.style.display = show ? '' : 'none';
+                    if (show && opt.value === itemSelect.value) {
+                        currentValid = true;
+                    }
+                });
+
+                if (!currentValid) {
+                    itemSelect.value = '';
+                }
+            }
+
+            if (locationInput && locationInput.tagName === 'SELECT') {
+                locationInput.addEventListener('change', filterItems);
+            }
+
+            filterItems();
+        })();
+    </script>
+}

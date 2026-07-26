@@ -133,7 +133,47 @@ BEGIN
 END
 GO
 -- ================================================================
--- 6. 既有資料庫升級：補上規格/圖片/分類、轉移批次與確認欄位
+-- 6. 物資捐贈紀錄表：SupplyDonationLog
+-- ================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SupplyDonationLog')
+BEGIN
+    CREATE TABLE SupplyDonationLog (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        SupplyItemId INT NOT NULL,
+        LocationId INT NOT NULL,
+        DonationQuantity INT NOT NULL,
+        DonorName NVARCHAR(50) NOT NULL,
+        DonorContact NVARCHAR(50) NULL,
+        Operator NVARCHAR(50) NULL,
+        DonationTime DATETIME NOT NULL DEFAULT GETDATE(),
+        Remark NVARCHAR(300) NULL,
+        CONSTRAINT FK_DonationLog_SupplyItem FOREIGN KEY (SupplyItemId)
+            REFERENCES SupplyItem(Id),
+        CONSTRAINT FK_DonationLog_Location FOREIGN KEY (LocationId)
+            REFERENCES SupplyLocation(Id)
+    );
+END
+GO
+-- ================================================================
+-- 7. LINE OA 通知設定表：LineNotificationSettings（單一設定列，尚未串接真實 LINE API）
+-- ================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'LineNotificationSettings')
+BEGIN
+    CREATE TABLE LineNotificationSettings (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        IsEnabled BIT NOT NULL DEFAULT 0,
+        ChannelAccessToken NVARCHAR(300) NULL,
+        ChannelSecret NVARCHAR(300) NULL,
+        NotifyLowStock BIT NOT NULL DEFAULT 1,
+        NotifyExpiringSoon BIT NOT NULL DEFAULT 1,
+        NotifyExpired BIT NOT NULL DEFAULT 1,
+        UpdatedAt DATETIME NULL,
+        UpdatedBy NVARCHAR(50) NULL
+    );
+END
+GO
+-- ================================================================
+-- 8. 既有資料庫升級：補上規格/圖片/分類、轉移批次與確認欄位
 -- ================================================================
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SupplyItem') AND name = 'Specification')
 BEGIN
@@ -239,6 +279,30 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_UserAccount_LocationId')
 BEGIN
     CREATE INDEX IX_UserAccount_LocationId ON UserAccount(LocationId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDonationLog_SupplyItemId')
+BEGIN
+    CREATE INDEX IX_SupplyDonationLog_SupplyItemId ON SupplyDonationLog(SupplyItemId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDonationLog_LocationId')
+BEGIN
+    CREATE INDEX IX_SupplyDonationLog_LocationId ON SupplyDonationLog(LocationId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDonationLog_SupplyItemId')
+BEGIN
+    CREATE INDEX IX_SupplyDonationLog_SupplyItemId ON SupplyDonationLog(SupplyItemId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDonationLog_LocationId')
+BEGIN
+    CREATE INDEX IX_SupplyDonationLog_LocationId ON SupplyDonationLog(LocationId);
 END
 GO
 

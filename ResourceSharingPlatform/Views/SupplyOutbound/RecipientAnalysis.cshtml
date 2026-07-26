@@ -1,0 +1,93 @@
+@model List<ResourceSharingPlatform.Models.ViewModels.RecipientSummaryViewModel>
+
+@{
+    ViewData["Title"] = "領取分析";
+    var keyword = ViewBag.Keyword as string;
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-graph-up"></i> 領取人常態分析</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> 返回出庫紀錄
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> 依領取人分組統計出庫紀錄，領取次數 ≥ 3 次會標記為「常態領取」，方便掌握固定領取的對象與慣性需求。
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-funnel"></i> 篩選條件
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="RecipientAnalysis">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">關鍵字</label>
+                        <input type="text" name="keyword" value="@keyword" class="form-control" placeholder="領取人姓名" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> 搜尋
+                        </button>
+                        <a asp-action="RecipientAnalysis" class="btn btn-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> 重設
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 沒有符合條件的領取紀錄。
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>領取人</th>
+                                <th>聯絡方式</th>
+                                <th>領取次數</th>
+                                <th>領取品項統計</th>
+                                <th>首次領取</th>
+                                <th>最近領取</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@r.RecipientName</strong>
+                                        @if (r.IsFrequent)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">常態領取</span>
+                                        }
+                                    </td>
+                                    <td>@r.RecipientContact</td>
+                                    <td class="text-end">@r.PickupCount</td>
+                                    <td>@r.ItemBreakdown</td>
+                                    <td>@r.FirstPickupDate.ToString("yyyy-MM-dd")</td>
+                                    <td>@r.LastPickupDate.ToString("yyyy-MM-dd")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <p class="text-muted mb-0">共 @Model.Count 位領取人</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1382,3 +1382,74 @@ ALTER TABLE UserAccount ADD CONSTRAINT FK_UserAccount_SupplyLocation FOREIGN KEY
 2. **既有重複資料一次性清理**（`Data/DbInitializer.MergeDuplicateItemsAsync`，於 `Program.cs` 啟動時與 `SeedAdminAsync` 一起呼叫）：依同一組比對鍵把現有重複的啟用中物資分組，同組只留最早建立的一筆、其餘數量併入、其餘停用。此方法是 idempotent 的，沒有重複資料時完全不動作，可以安全地每次啟動都執行。
 3. **依物資名稱統計**（`SupplyItemController.Index` + `Models/ViewModels/SupplyItemSummaryViewModel.cs`）：在目前篩選/搜尋結果之上，依 `ItemName` 分組計算跨據點總量、分布據點數（`LocationCount`，去重複計算 `LocationId` 的數量，不是資料筆數——同據點若因效期不同而有多筆資料，仍只算 1 個據點）、是否含低庫存、最近效期，顯示在物資管理頁明細表格上方一個可收合的「依物資統計」卡片，讓同名物資即使分散在多筆資料/多據點，也能立即看到彙總數字。
 
+---
+
+## 32. 捐物者芳名錄、領取人常態分析、LINE OA 被動式通報模組（介面預覽）
+
+### 32.1 物資捐贈登記 + 捐物者芳名錄
+
+新增 `SupplyDonationLog` 資料表，結構與邏輯是「物資出庫」的鏡像（方向相反：增加庫存而不是減少）：
+
+```sql
+CREATE TABLE SupplyDonationLog (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    SupplyItemId INT NOT NULL,
+    LocationId INT NOT NULL,
+    DonationQuantity INT NOT NULL,
+    DonorName NVARCHAR(50) NOT NULL,
+    DonorContact NVARCHAR(50) NULL,
+    Operator NVARCHAR(50) NULL,
+    DonationTime DATETIME NOT NULL DEFAULT GETDATE(),
+    Remark NVARCHAR(300) NULL,
+    CONSTRAINT FK_DonationLog_SupplyItem FOREIGN KEY (SupplyItemId) REFERENCES SupplyItem(Id),
+    CONSTRAINT FK_DonationLog_Location FOREIGN KEY (LocationId) REFERENCES SupplyLocation(Id)
+);
+```
+
+- `Controllers/SupplyDonationController.cs` / `Services/SupplyDonationService.cs`：結構比照 `SupplyOutboundController`/`SupplyOutboundService`——`Create` 據點欄位管理人員可自由選、幹部/社工鎖定自己所屬據點；物資下拉依據點連動篩選；`DonateAsync` 在 transaction 內把數量加進指定物資、寫入捐贈紀錄（不需檢查庫存是否足夠，因為是加庫存）
+- `Views/SupplyDonation/Index.cshtml` 上方的「捐物者芳名錄」卡片：依 `DonorName` + `DonorContact` 分組統計捐贈次數、捐贈品項數、首次/最近捐贈時間，寫法比照物資管理頁的「依物資統計」
+- 權限：管理人員不限據點；幹部/社工只能對自己所屬據點登記捐贈；紀錄與芳名錄任何登入角色都能看（唯讀）
+
+### 32.2 領取人常態分析
+
+不需要新資料表，直接分析既有的 `SupplyOutboundLog`（`Controllers/SupplyOutboundController.cs` 新增 `RecipientAnalysis` action）：
+
+- 依 `RecipientName` + `RecipientContact`（聯絡方式有填時一併比對，避免同名不同人被混在一起）分組
+- 計算領取次數、領取品項統計文字（例如「飲用水（3次，共5瓶）、泡麵（1次，共2箱）」）、首次/最近領取時間
+- 領取次數 ≥ 3 次標記為「常態領取」（`Models/ViewModels/RecipientSummaryViewModel.IsFrequent`）
+- 依領取次數由高到低排序，支援關鍵字（領取人姓名）搜尋
+- 入口：「出庫紀錄」頁面新增「查看領取分析」按鈕
+
+### 32.3 LINE OA 被動式通報模組（僅介面與資料庫，尚未串接真實 API）
+
+新增 `LineNotificationSettings`（單一設定列，類似系統設定）：
+
+```sql
+CREATE TABLE LineNotificationSettings (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    IsEnabled BIT NOT NULL DEFAULT 0,
+    ChannelAccessToken NVARCHAR(300) NULL,
+    ChannelSecret NVARCHAR(300) NULL,
+    NotifyLowStock BIT NOT NULL DEFAULT 1,
+    NotifyExpiringSoon BIT NOT NULL DEFAULT 1,
+    NotifyExpired BIT NOT NULL DEFAULT 1,
+    UpdatedAt DATETIME NULL,
+    UpdatedBy NVARCHAR(50) NULL
+);
+```
+
+- 啟動時 `DbInitializer.EnsureLineSettingsAsync` 會確保有一列預設設定（停用、三種觸發條件預設開啟）
+- `Controllers/LineNotificationController.cs`（`[Authorize(Roles = Roles.Admin)]`，僅管理人員）：
+  - `Settings()` GET/POST：編輯啟用開關、Channel Access Token／Secret（沿用帳號管理密碼欄位「留空表示不變更」的寫法，儲存後畫面不會顯示明碼）、三種觸發條件（低庫存／即期／已過期）
+  - 頁面下方即時預覽「目前符合通知條件的物資」，重用既有的低庫存/即期/已過期判斷邏輯
+  - `TestSend()` POST：**不會呼叫任何真實 LINE API**，只回傳「（模擬）已模擬產生 N 則通知內容，尚未串接真實 LINE，不會真的傳送」的訊息
+- 畫面上明確標示「⚠ 尚未串接真實 LINE Messaging API」，之後要正式串接只需要填入真實憑證並實作 Webhook/推播呼叫
+
+### 32.4 導覽列調整
+
+新增功能太多，導覽列改成分類下拉選單（不影響任何既有連結，只是收合）：
+- 保留：戰情總覽／據點地圖／物資管理／據點管理
+- 「物資異動」下拉：物資轉移／轉移紀錄／物資出庫／出庫紀錄／物資捐贈／捐贈紀錄
+- 「分析報表」下拉：領取分析
+- 「系統管理」下拉（僅管理人員）：帳號管理／LINE 通知設定
+
