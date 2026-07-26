@@ -173,7 +173,28 @@ BEGIN
 END
 GO
 -- ================================================================
--- 8. 既有資料庫升級：補上規格/圖片/分類、轉移批次與確認欄位
+-- 8. 物資報廢／損耗紀錄表：SupplyDisposalLog
+-- ================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SupplyDisposalLog')
+BEGIN
+    CREATE TABLE SupplyDisposalLog (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        SupplyItemId INT NOT NULL,
+        LocationId INT NOT NULL,
+        DisposalQuantity INT NOT NULL,
+        Reason NVARCHAR(20) NOT NULL DEFAULT 'Other',
+        Operator NVARCHAR(50) NULL,
+        DisposalTime DATETIME NOT NULL DEFAULT GETDATE(),
+        Remark NVARCHAR(300) NULL,
+        CONSTRAINT FK_DisposalLog_SupplyItem FOREIGN KEY (SupplyItemId)
+            REFERENCES SupplyItem(Id),
+        CONSTRAINT FK_DisposalLog_Location FOREIGN KEY (LocationId)
+            REFERENCES SupplyLocation(Id)
+    );
+END
+GO
+-- ================================================================
+-- 9. 既有資料庫升級：補上規格/圖片/分類、轉移批次與確認欄位
 -- ================================================================
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SupplyItem') AND name = 'Specification')
 BEGIN
@@ -303,6 +324,18 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDonationLog_LocationId')
 BEGIN
     CREATE INDEX IX_SupplyDonationLog_LocationId ON SupplyDonationLog(LocationId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDisposalLog_SupplyItemId')
+BEGIN
+    CREATE INDEX IX_SupplyDisposalLog_SupplyItemId ON SupplyDisposalLog(SupplyItemId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDisposalLog_LocationId')
+BEGIN
+    CREATE INDEX IX_SupplyDisposalLog_LocationId ON SupplyDisposalLog(LocationId);
 END
 GO
 

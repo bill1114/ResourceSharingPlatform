@@ -23,25 +23,7 @@ namespace ResourceSharingPlatform.Controllers
         // GET: SupplyDonation
         public async Task<IActionResult> Index(string? keyword)
         {
-            var query = _context.SupplyDonationLogs
-                .Include(x => x.SupplyItem)
-                .Include(x => x.Location)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                query = query.Where(x =>
-                    (x.SupplyItem != null && x.SupplyItem.ItemName.Contains(keyword)) ||
-                    x.DonorName.Contains(keyword) ||
-                    (x.DonorContact != null && x.DonorContact.Contains(keyword)) ||
-                    (x.Operator != null && x.Operator.Contains(keyword)) ||
-                    (x.Remark != null && x.Remark.Contains(keyword)));
-            }
-
-            var logs = await query
-                .OrderByDescending(x => x.DonationTime)
-                .Take(100)
-                .ToListAsync();
+            var logs = (await GetFilteredLogsAsync(keyword)).Take(100).ToList();
 
             ViewBag.Keyword = keyword;
 
@@ -62,6 +44,49 @@ namespace ResourceSharingPlatform.Controllers
                 .ToList();
 
             return View(logs);
+        }
+
+        // GET: SupplyDonation/ExportExcel
+        public async Task<IActionResult> ExportExcel(string? keyword)
+        {
+            var logs = await GetFilteredLogsAsync(keyword);
+
+            var headers = new[] { "捐贈時間", "物資名稱", "據點", "捐贈數量", "捐贈者", "聯絡方式", "操作人員", "備註" };
+            var rows = logs.Select(x => new object?[]
+            {
+                x.DonationTime,
+                x.SupplyItem?.ItemName,
+                x.Location?.LocationName,
+                x.DonationQuantity,
+                x.DonorName,
+                x.DonorContact,
+                x.Operator,
+                x.Remark
+            });
+
+            var bytes = ExcelExportHelper.BuildWorkbook("捐贈明細", headers, rows);
+            var fileName = $"捐贈明細_{DateTime.Now:yyyyMMddHHmm}.xlsx";
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        private async Task<List<SupplyDonationLog>> GetFilteredLogsAsync(string? keyword)
+        {
+            var query = _context.SupplyDonationLogs
+                .Include(x => x.SupplyItem)
+                .Include(x => x.Location)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    (x.SupplyItem != null && x.SupplyItem.ItemName.Contains(keyword)) ||
+                    x.DonorName.Contains(keyword) ||
+                    (x.DonorContact != null && x.DonorContact.Contains(keyword)) ||
+                    (x.Operator != null && x.Operator.Contains(keyword)) ||
+                    (x.Remark != null && x.Remark.Contains(keyword)));
+            }
+
+            return await query.OrderByDescending(x => x.DonationTime).ToListAsync();
         }
 
         // GET: SupplyDonation/Create

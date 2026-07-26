@@ -1453,3 +1453,43 @@ CREATE TABLE LineNotificationSettings (
 - 「分析報表」下拉：領取分析
 - 「系統管理」下拉（僅管理人員）：帳號管理／LINE 通知設定
 
+## 33. 物資報廢／損耗紀錄、Excel 匯出
+
+### 33.1 物資報廢／損耗紀錄
+
+目前系統只能透過出庫／轉移／捐贈調整庫存，過期或損壞物資沒有正式的減量管道，只能靠直接編輯物資數量（沒有紀錄可查）。因此新增一套與出庫功能結構完全相同、方向相同（都是減少庫存）的報廢登記流程。
+
+資料庫：`SupplyDisposalLog`（`Database/CreateDatabase.sql` 第 8 節；原本的「既有資料庫升級」章節順延為第 9 節）
+```sql
+CREATE TABLE SupplyDisposalLog (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    SupplyItemId INT NOT NULL,
+    LocationId INT NOT NULL,
+    DisposalQuantity INT NOT NULL,
+    Reason NVARCHAR(20) NOT NULL DEFAULT 'Other',
+    Operator NVARCHAR(50) NULL,
+    DisposalTime DATETIME NOT NULL DEFAULT GETDATE(),
+    Remark NVARCHAR(300) NULL,
+    CONSTRAINT FK_DisposalLog_SupplyItem FOREIGN KEY (SupplyItemId) REFERENCES SupplyItem(Id),
+    CONSTRAINT FK_DisposalLog_Location FOREIGN KEY (LocationId) REFERENCES SupplyLocation(Id)
+);
+```
+
+- `Models/DisposalReasons.cs`：過期（Expired）／損壞（Damaged）／遺失（Lost）／其他（Other），含顯示名稱與徽章顏色（過期=danger、損壞=warning、遺失=secondary、其他=dark）
+- `Services/SupplyDisposalService.DisposeAsync`：交易內檢查庫存是否足夠、扣減數量、寫入報廢紀錄（邏輯與 `SupplyOutboundService.IssueAsync` 完全對稱）
+- `Controllers/SupplyDisposalController.cs`：據點鎖定（`GetMyLocationIdIfRestricted`/`NoAccessSentinel`）、FEFO 物資排序、即期物資提醒橫幅、關鍵字搜尋，寫法全部比照 `SupplyOutboundController`
+- 導覽列「物資異動」下拉新增「物資報廢」／「報廢紀錄」
+
+### 33.2 Excel 匯出
+
+為了方便產出報表給 NPO／政府單位，物資清單、捐贈明細、出庫明細、報廢明細都新增「匯出 Excel」按鈕，會依照目前頁面上的篩選條件（據點、分類、關鍵字等）匯出對應的資料，不是整批全匯出。
+
+- 採用 **ClosedXML**（MIT 授權）而非 EPPlus（商業授權疑慮）
+- `Services/ExcelExportHelper.BuildWorkbook(sheetName, headers, rows)`：共用的產表工具，回傳 `byte[]`，供各控制器直接 `File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName)` 回傳下載
+- 各控制器都把原本 `Index` 內建的篩選查詢邏輯抽成私有方法（`GetFilteredItemsAsync`/`GetFilteredLogsAsync`），讓 `Index` 與新增的 `ExportExcel` 共用同一份篩選條件，避免邏輯重複、也保證匯出的資料跟畫面上看到的一致
+- 新增的匯出端點：
+  - `SupplyItemController.ExportExcel`（物資清單，依 據點/分類/庫存類型/關鍵字 篩選）
+  - `SupplyDonationController.ExportExcel`（捐贈明細，依 關鍵字 篩選）
+  - `SupplyOutboundController.ExportExcel`（出庫明細，依 關鍵字 篩選）
+  - `SupplyDisposalController.ExportExcel`（報廢明細，依 關鍵字 篩選）
+

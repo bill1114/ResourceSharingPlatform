@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Models.ViewModels;
+using ResourceSharingPlatform.Services;
 
 namespace ResourceSharingPlatform.Controllers
 {
@@ -25,39 +26,7 @@ namespace ResourceSharingPlatform.Controllers
         // GET: SupplyItem
         public async Task<IActionResult> Index(int? locationId, string? category, string? stockType, string? keyword)
         {
-            var query = _context.SupplyItems
-                .Include(s => s.Location)
-                .Where(x => x.IsActive);
-
-            if (locationId.HasValue)
-            {
-                query = query.Where(x => x.LocationId == locationId.Value);
-            }
-
-            if (!string.IsNullOrEmpty(category))
-            {
-                query = query.Where(x => x.Category == category);
-            }
-
-            if (!string.IsNullOrEmpty(stockType))
-            {
-                query = query.Where(x => x.StockType == stockType);
-            }
-
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                query = query.Where(x =>
-                    x.ItemName.Contains(keyword) ||
-                    (x.Specification != null && x.Specification.Contains(keyword)) ||
-                    x.Category.Contains(keyword) ||
-                    (x.Remark != null && x.Remark.Contains(keyword)));
-            }
-
-            var items = (await query.ToListAsync())
-                .OrderBy(x => x.ExpirationDate.HasValue ? 0 : 1)
-                .ThenBy(x => x.ExpirationDate)
-                .ThenByDescending(x => x.CreatedAt)
-                .ToList();
+            var items = await GetFilteredItemsAsync(locationId, category, stockType, keyword);
 
             // For filter dropdowns
             ViewBag.Locations = new SelectList(
@@ -95,6 +64,68 @@ namespace ResourceSharingPlatform.Controllers
                 .ToList();
 
             return View(items);
+        }
+
+        // GET: SupplyItem/ExportExcel
+        public async Task<IActionResult> ExportExcel(int? locationId, string? category, string? stockType, string? keyword)
+        {
+            var items = await GetFilteredItemsAsync(locationId, category, stockType, keyword);
+
+            var headers = new[] { "物資名稱", "分類", "規格", "數量", "單位", "庫存類型", "有效期限", "安全庫存", "據點", "備註" };
+            var rows = items.Select(x => new object?[]
+            {
+                x.ItemName,
+                x.Category,
+                x.Specification,
+                x.Quantity,
+                x.Unit,
+                StockTypes.ToDisplayName(x.StockType),
+                x.ExpirationDate,
+                x.SafetyStock,
+                x.Location?.LocationName,
+                x.Remark
+            });
+
+            var bytes = ExcelExportHelper.BuildWorkbook("物資清單", headers, rows);
+            var fileName = $"物資清單_{DateTime.Now:yyyyMMddHHmm}.xlsx";
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        private async Task<List<SupplyItem>> GetFilteredItemsAsync(int? locationId, string? category, string? stockType, string? keyword)
+        {
+            var query = _context.SupplyItems
+                .Include(s => s.Location)
+                .Where(x => x.IsActive);
+
+            if (locationId.HasValue)
+            {
+                query = query.Where(x => x.LocationId == locationId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(category))
+            {
+                query = query.Where(x => x.Category == category);
+            }
+
+            if (!string.IsNullOrEmpty(stockType))
+            {
+                query = query.Where(x => x.StockType == stockType);
+            }
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(x =>
+                    x.ItemName.Contains(keyword) ||
+                    (x.Specification != null && x.Specification.Contains(keyword)) ||
+                    x.Category.Contains(keyword) ||
+                    (x.Remark != null && x.Remark.Contains(keyword)));
+            }
+
+            return (await query.ToListAsync())
+                .OrderBy(x => x.ExpirationDate.HasValue ? 0 : 1)
+                .ThenBy(x => x.ExpirationDate)
+                .ThenByDescending(x => x.CreatedAt)
+                .ToList();
         }
 
         // GET: SupplyItem/Details/5

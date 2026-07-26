@@ -9,18 +9,18 @@ using ResourceSharingPlatform.Services;
 
 namespace ResourceSharingPlatform.Controllers
 {
-    public class SupplyOutboundController : Controller
+    public class SupplyDisposalController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly SupplyOutboundService _outboundService;
+        private readonly SupplyDisposalService _disposalService;
 
-        public SupplyOutboundController(ApplicationDbContext context, SupplyOutboundService outboundService)
+        public SupplyDisposalController(ApplicationDbContext context, SupplyDisposalService disposalService)
         {
             _context = context;
-            _outboundService = outboundService;
+            _disposalService = disposalService;
         }
 
-        // GET: SupplyOutbound
+        // GET: SupplyDisposal
         public async Task<IActionResult> Index(string? keyword)
         {
             var logs = (await GetFilteredLogsAsync(keyword)).Take(100).ToList();
@@ -31,32 +31,31 @@ namespace ResourceSharingPlatform.Controllers
             return View(logs);
         }
 
-        // GET: SupplyOutbound/ExportExcel
+        // GET: SupplyDisposal/ExportExcel
         public async Task<IActionResult> ExportExcel(string? keyword)
         {
             var logs = await GetFilteredLogsAsync(keyword);
 
-            var headers = new[] { "出庫時間", "物資名稱", "來源據點", "出庫數量", "領用人", "聯絡方式", "操作人員", "備註" };
+            var headers = new[] { "報廢時間", "物資名稱", "據點", "報廢數量", "報廢原因", "操作人員", "備註" };
             var rows = logs.Select(x => new object?[]
             {
-                x.OutboundTime,
+                x.DisposalTime,
                 x.SupplyItem?.ItemName,
                 x.Location?.LocationName,
-                x.OutboundQuantity,
-                x.RecipientName,
-                x.RecipientContact,
+                x.DisposalQuantity,
+                DisposalReasons.ToDisplayName(x.Reason),
                 x.Operator,
                 x.Remark
             });
 
-            var bytes = ExcelExportHelper.BuildWorkbook("出庫明細", headers, rows);
-            var fileName = $"出庫明細_{DateTime.Now:yyyyMMddHHmm}.xlsx";
+            var bytes = ExcelExportHelper.BuildWorkbook("報廢明細", headers, rows);
+            var fileName = $"報廢明細_{DateTime.Now:yyyyMMddHHmm}.xlsx";
             return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
-        private async Task<List<SupplyOutboundLog>> GetFilteredLogsAsync(string? keyword)
+        private async Task<List<SupplyDisposalLog>> GetFilteredLogsAsync(string? keyword)
         {
-            var query = _context.SupplyOutboundLogs
+            var query = _context.SupplyDisposalLogs
                 .Include(x => x.SupplyItem)
                 .Include(x => x.Location)
                 .AsQueryable();
@@ -65,68 +64,25 @@ namespace ResourceSharingPlatform.Controllers
             {
                 query = query.Where(x =>
                     (x.SupplyItem != null && x.SupplyItem.ItemName.Contains(keyword)) ||
-                    x.RecipientName.Contains(keyword) ||
-                    (x.RecipientContact != null && x.RecipientContact.Contains(keyword)) ||
                     (x.Operator != null && x.Operator.Contains(keyword)) ||
                     (x.Remark != null && x.Remark.Contains(keyword)));
             }
 
-            return await query.OrderByDescending(x => x.OutboundTime).ToListAsync();
+            return await query.OrderByDescending(x => x.DisposalTime).ToListAsync();
         }
 
-        // GET: SupplyOutbound/RecipientAnalysis
-        public async Task<IActionResult> RecipientAnalysis(string? keyword)
-        {
-            const int FrequentThreshold = 3;
-
-            var query = _context.SupplyOutboundLogs.Include(x => x.SupplyItem).AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                query = query.Where(x => x.RecipientName.Contains(keyword));
-            }
-
-            var logs = await query.ToListAsync();
-
-            var summary = logs
-                .GroupBy(x => (x.RecipientName, Contact: x.RecipientContact ?? string.Empty))
-                .Select(g =>
-                {
-                    var itemBreakdown = string.Join("、", g
-                        .GroupBy(x => new { x.SupplyItem?.ItemName, x.SupplyItem?.Unit })
-                        .Select(ig => $"{ig.Key.ItemName}（{ig.Count()}次，共{ig.Sum(x => x.OutboundQuantity)}{ig.Key.Unit}）"));
-
-                    return new RecipientSummaryViewModel
-                    {
-                        RecipientName = g.Key.RecipientName,
-                        RecipientContact = string.IsNullOrEmpty(g.Key.Contact) ? null : g.Key.Contact,
-                        PickupCount = g.Count(),
-                        IsFrequent = g.Count() >= FrequentThreshold,
-                        ItemBreakdown = itemBreakdown,
-                        FirstPickupDate = g.Min(x => x.OutboundTime),
-                        LastPickupDate = g.Max(x => x.OutboundTime)
-                    };
-                })
-                .OrderByDescending(x => x.PickupCount)
-                .ToList();
-
-            ViewBag.Keyword = keyword;
-
-            return View(summary);
-        }
-
-        // GET: SupplyOutbound/Create
+        // GET: SupplyDisposal/Create
         public async Task<IActionResult> Create(int? supplyItemId, int? locationId)
         {
             var myLocationId = GetMyLocationIdIfRestricted();
 
             if (myLocationId == NoAccessSentinel)
             {
-                TempData["ErrorMessage"] = "您的帳號尚未指定所屬據點，無法執行出庫，請聯絡管理人員設定。";
+                TempData["ErrorMessage"] = "您的帳號尚未指定所屬據點，無法執行報廢，請聯絡管理人員設定。";
                 return RedirectToAction(nameof(Index));
             }
 
-            var model = new OutboundViewModel { SupplyItemId = supplyItemId ?? 0 };
+            var model = new DisposalViewModel { SupplyItemId = supplyItemId ?? 0 };
 
             if (myLocationId.HasValue)
             {
@@ -143,28 +99,28 @@ namespace ResourceSharingPlatform.Controllers
             return View(model);
         }
 
-        // POST: SupplyOutbound/Create
+        // POST: SupplyDisposal/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(OutboundViewModel model)
+        public async Task<IActionResult> Create(DisposalViewModel model)
         {
             var myLocationId = GetMyLocationIdIfRestricted();
 
             if (myLocationId == NoAccessSentinel)
             {
-                TempData["ErrorMessage"] = "您的帳號尚未指定所屬據點，無法執行出庫，請聯絡管理人員設定。";
+                TempData["ErrorMessage"] = "您的帳號尚未指定所屬據點，無法執行報廢，請聯絡管理人員設定。";
                 return RedirectToAction(nameof(Index));
             }
 
             if (myLocationId.HasValue && model.LocationId != myLocationId.Value)
             {
-                ModelState.AddModelError(string.Empty, "您沒有權限在此據點執行出庫");
+                ModelState.AddModelError(string.Empty, "您沒有權限在此據點執行報廢");
             }
 
             if (ModelState.IsValid)
             {
                 var operatorName = User.FindFirstValue("DisplayName") ?? User.Identity?.Name;
-                var result = await _outboundService.IssueAsync(model, operatorName);
+                var result = await _disposalService.DisposeAsync(model, operatorName);
 
                 if (result.Success)
                 {
@@ -212,8 +168,6 @@ namespace ResourceSharingPlatform.Controllers
                 .Where(x => x.IsActive)
                 .Include(x => x.Location)
                 .ToListAsync();
-
-            var today = DateTime.Today;
 
             var ordered = items
                 .OrderBy(x => x.ExpirationDate.HasValue ? 0 : 1)

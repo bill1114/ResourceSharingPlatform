@@ -39,6 +39,7 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<SupplyTransferService>();
 builder.Services.AddScoped<SupplyOutboundService>();
 builder.Services.AddScoped<SupplyDonationService>();
+builder.Services.AddScoped<SupplyDisposalService>();
 
 var app = builder.Build();
 

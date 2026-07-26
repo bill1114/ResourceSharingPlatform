@@ -17,6 +17,7 @@ namespace ResourceSharingPlatform.Data
         public DbSet<SupplyOutboundLog> SupplyOutboundLogs { get; set; }
         public DbSet<SupplyDonationLog> SupplyDonationLogs { get; set; }
         public DbSet<LineNotificationSettings> LineNotificationSettings { get; set; }
+        public DbSet<SupplyDisposalLog> SupplyDisposalLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -30,6 +31,7 @@ namespace ResourceSharingPlatform.Data
             modelBuilder.Entity<SupplyOutboundLog>().ToTable("SupplyOutboundLog");
             modelBuilder.Entity<SupplyDonationLog>().ToTable("SupplyDonationLog");
             modelBuilder.Entity<LineNotificationSettings>().ToTable("LineNotificationSettings");
+            modelBuilder.Entity<SupplyDisposalLog>().ToTable("SupplyDisposalLog");
 
             // Configure relationships
             modelBuilder.Entity<SupplyItem>()
@@ -81,6 +83,18 @@ namespace ResourceSharingPlatform.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<SupplyDonationLog>()
+                .HasOne(x => x.Location)
+                .WithMany()
+                .HasForeignKey(x => x.LocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SupplyDisposalLog>()
+                .HasOne(x => x.SupplyItem)
+                .WithMany()
+                .HasForeignKey(x => x.SupplyItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SupplyDisposalLog>()
                 .HasOne(x => x.Location)
                 .WithMany()
                 .HasForeignKey(x => x.LocationId)
