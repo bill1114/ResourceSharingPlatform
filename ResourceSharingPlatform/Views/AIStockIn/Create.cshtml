@@ -1,0 +1,118 @@
+@using ResourceSharingPlatform.Models
+@{
+    ViewData["Title"] = "AI 智慧入庫";
+    var settings = ViewBag.Settings as AIStockInSettings;
+    var isEnabled = settings?.IsEnabled == true;
+    var supportsImage = settings?.SupportsImageInput != false;
+    var supportsText = settings?.SupportsTextInput != false;
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-stars"></i> AI 智慧入庫</h2>
+    <hr />
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!isEnabled)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>⚠ AI 智慧入庫尚未啟用</strong>，尚未串接真實外部模型 API。您仍然可以送出照片或文字，系統會記錄輸入內容，但不會產生辨識建議，下一步需要您自行手動填寫正確的物資資訊。
+            @if (User.IsInRole(Roles.Admin))
+            {
+                <a asp-action="Settings" class="alert-link">前往設定</a>
+            }
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Recognize" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">據點 <span class="text-danger">*</span></label>
+                            <select name="locationId" asp-items="ViewBag.Locations" class="form-select">
+                                <option value="">請選擇據點</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">輸入方式</label>
+                            <div class="btn-group w-100" role="group" id="inputTypeGroup">
+                                @if (supportsImage)
+                                {
+                                    <input type="radio" class="btn-check" name="inputType" id="inputImage" value="@AIStockInInputTypes.Image" autocomplete="off" checked>
+                                    <label class="btn btn-outline-primary" for="inputImage"><i class="bi bi-camera"></i> 照片辨識</label>
+                                }
+                                @if (supportsText)
+                                {
+                                    <input type="radio" class="btn-check" name="inputType" id="inputText" value="@AIStockInInputTypes.Text" autocomplete="off" checked="@(!supportsImage)">
+                                    <label class="btn btn-outline-primary" for="inputText"><i class="bi bi-fonts"></i> 文字描述</label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="imageInputWrap">
+                            <label class="form-label">物資照片</label>
+                            <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/webp" />
+                            <small class="text-muted">支援 jpg、png、webp，大小 5MB 以內</small>
+                        </div>
+
+                        <div class="mb-3" id="textInputWrap">
+                            <label class="form-label">文字描述</label>
+                            <textarea name="inputText" class="form-control" rows="3" placeholder="例如：礦泉水 10 箱，每箱 24 瓶"></textarea>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-stars"></i> AI 辨識
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回紀錄
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> 使用說明</h6>
+                <ul class="mb-0">
+                    <li>AI 辨識後會進入確認畫面，欄位與「新增物資」完全相同</li>
+                    <li>確認並送出後才會真的寫入庫存，AI 建議僅供參考</li>
+                    <li>每次辨識都會留下紀錄，方便日後追溯</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var imageWrap = document.getElementById('imageInputWrap');
+            var textWrap = document.getElementById('textInputWrap');
+
+            function update() {
+                var checked = document.querySelector('input[name="inputType"]:checked');
+                var val = checked ? checked.value : '@AIStockInInputTypes.Image';
+                imageWrap.style.display = val === '@AIStockInInputTypes.Image' ? '' : 'none';
+                textWrap.style.display = val === '@AIStockInInputTypes.Text' ? '' : 'none';
+            }
+
+            document.querySelectorAll('input[name="inputType"]').forEach(function (r) {
+                r.addEventListener('change', update);
+            });
+            update();
+        })();
+    </script>
+}

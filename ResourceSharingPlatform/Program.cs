@@ -40,6 +40,7 @@ builder.Services.AddScoped<SupplyTransferService>();
 builder.Services.AddScoped<SupplyOutboundService>();
 builder.Services.AddScoped<SupplyDonationService>();
 builder.Services.AddScoped<SupplyDisposalService>();
+builder.Services.AddScoped<AIStockInService>();
 
 var app = builder.Build();
 
@@ -65,5 +66,6 @@ app.MapControllerRoute(
 await DbInitializer.SeedAdminAsync(app.Services);
 await DbInitializer.MergeDuplicateItemsAsync(app.Services);
 await DbInitializer.EnsureLineSettingsAsync(app.Services);
+await DbInitializer.EnsureAIStockInSettingsAsync(app.Services);
 
 app.Run();

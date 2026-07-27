@@ -1493,3 +1493,29 @@ CREATE TABLE SupplyDisposalLog (
   - `SupplyOutboundController.ExportExcel`（出庫明細，依 關鍵字 篩選）
   - `SupplyDisposalController.ExportExcel`（報廢明細，依 關鍵字 篩選）
 
+## 34. AI 智慧入庫（尚未串接真實外部模型 API）
+
+使用者想透過外部開源模型幫忙判斷入庫的品項與數量，但實際要串接的模型／API 規格尚未確定。因此先把資料層與完整的操作介面建好、預留好欄位，待日後補上真實 API 呼叫時不需要更動資料庫結構或確認流程。
+
+### 34.1 資料庫
+
+- `AIStockInSettings`（單一設定列，比照 LINE OA 設定的做法）：`IsEnabled`、`ApiEndpoint`、`ApiKey`、`SupportsImageInput`、`SupportsTextInput`、`UpdatedAt`、`UpdatedBy`。啟動時 `DbInitializer.EnsureAIStockInSettingsAsync` 會確保有一列預設值（停用、兩種輸入方式預設開啟）。
+- `AIStockInLog`：每次 AI 辨識的稽核紀錄。欄位分兩類：
+  - 輸入：`LocationId`、`InputType`（Image/Text）、`InputText`、`InputImagePath`
+  - AI 建議（**欄位名稱與「新增物資」逐一對應**，方便直接映射寫入 `SupplyItem`）：`SuggestedCategory`、`SuggestedItemName`、`SuggestedSpecification`、`SuggestedQuantity`、`SuggestedUnit`、`SuggestedStockType`、`SuggestedExpirationDate`、`SuggestedSafetyStock`、`SuggestedRemark`、`Confidence`、`RawResponse`
+  - 確認狀態：`IsConfirmed`、`ConfirmedSupplyItemId`、`Operator`、`CreatedAt`、`ConfirmedAt`
+
+### 34.2 操作流程（先建立完整介面，AI 判斷邏輯先留空）
+
+1. `AIStockIn/Create`：選擇據點、選擇輸入方式（照片辨識／文字描述），上傳照片或輸入文字後送出
+2. `AIStockInController.Recognize`：呼叫 `Services/AIStockInService.RecognizeAsync`，儲存輸入內容（照片存到 `wwwroot/uploads/ai-stockin/`）為一筆 `AIStockInLog`。**目前尚未取得外部模型 API 的端點/驗證/輸入輸出格式規格**，因此這裡只記錄輸入、不產生 Suggested* 欄位的建議值；`RawResponse` 會依「是否已啟用＋是否已設定端點」顯示對應的說明文字。之後補上真實 API 規格後，只需要在 `RecognizeAsync` 內呼叫該端點並把回應解析進 `Suggested*` 欄位即可，資料庫結構與下面的確認流程都不需要更動。
+3. `AIStockIn/Confirm/{id}`：顯示原始輸入內容（照片縮圖或文字）與一份跟「新增物資」欄位完全相同的表單（種類/物資名稱/規格/數量/單位/庫存分類/有效期限/安全庫存/備註），預填 AI 建議值（目前為空，需人工填寫）
+4. 確認送出後，比照 `SupplyItemController.Create` 的合併邏輯（同據點/品項/種類/規格/分類/效期 → 合併數量；否則新增一筆），並把 `AIStockInLog` 標記為已確認、記錄對應的 `SupplyItemId`
+5. `AIStockIn/Index`：辨識紀錄列表，關鍵字搜尋，未確認的紀錄可點「前往確認」繼續完成
+6. `AIStockIn/Settings`（僅管理人員）：設定啟用開關、模型端點、API 金鑰（留空表示不變更，比照帳號/LINE OA 的遮蔽寫法）、支援的輸入方式
+
+### 34.3 導覽列
+
+- 「物資異動」下拉新增「AI 智慧入庫」／「AI 辨識紀錄」
+- 「系統管理」下拉（僅管理人員）新增「AI 智慧入庫設定」
+

@@ -1,0 +1,119 @@
+@model IEnumerable<ResourceSharingPlatform.Models.AIStockInLog>
+@using ResourceSharingPlatform.Models
+
+@{
+    ViewData["Title"] = "AI 智慧入庫紀錄";
+    var keyword = ViewBag.Keyword as string;
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-stars"></i> AI 智慧入庫紀錄</h2>
+        <div>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 新增 AI 辨識
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-funnel"></i> 篩選條件
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">關鍵字</label>
+                        <input type="text" name="keyword" value="@keyword" class="form-control" placeholder="物資名稱、文字描述、操作人員" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> 搜尋
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> 重設
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 沒有符合條件的辨識紀錄，請<a asp-action="Create" class="alert-link">開始 AI 辨識</a>。
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>時間</th>
+                                <th>據點</th>
+                                <th>輸入方式</th>
+                                <th>輸入內容</th>
+                                <th>建議品項</th>
+                                <th>狀態</th>
+                                <th>操作人員</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model)
+                            {
+                                <tr>
+                                    <td>@log.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>
+                                        <span class="badge" style="@LocationColors.Style(log.LocationId)">
+                                            <i class="bi bi-building"></i> @log.Location?.LocationName
+                                        </span>
+                                    </td>
+                                    <td>@AIStockInInputTypes.ToDisplayName(log.InputType)</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(log.InputImagePath))
+                                        {
+                                            <img src="@log.InputImagePath" alt="輸入照片" style="width:40px;height:40px;object-fit:cover;" class="rounded border" />
+                                        }
+                                        else
+                                        {
+                                            @log.InputText
+                                        }
+                                    </td>
+                                    <td>@(log.SuggestedItemName ?? "-")</td>
+                                    <td>
+                                        @if (log.IsConfirmed)
+                                        {
+                                            <span class="badge bg-success">已確認</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">未確認</span>
+                                        }
+                                    </td>
+                                    <td>@log.Operator</td>
+                                    <td>
+                                        @if (!log.IsConfirmed)
+                                        {
+                                            <a asp-action="Confirm" asp-route-id="@log.Id" class="btn btn-sm btn-outline-primary">前往確認</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> 顯示最近 100 筆辨識紀錄
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</div>

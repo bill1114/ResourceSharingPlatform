@@ -1,0 +1,95 @@
+@model ResourceSharingPlatform.Models.ViewModels.AIStockInSettingsViewModel
+
+@{
+    ViewData["Title"] = "AI 智慧入庫設定";
+    bool hasApiKey = ViewBag.HasApiKey;
+    DateTime? updatedAt = ViewBag.UpdatedAt;
+    var updatedBy = ViewBag.UpdatedBy as string;
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-stars"></i> AI 智慧入庫設定</h2>
+    <hr />
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>⚠ 尚未串接真實外部開源模型 API</strong>，此頁目前僅供保存連線設定。填入端點與金鑰、開啟啟用開關後，AI 智慧入庫頁面仍會先記錄輸入內容，實際的辨識呼叫邏輯需等待模型 API 規格確認後才會補上。
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <i class="bi bi-gear"></i> 連線設定
+                </div>
+                <div class="card-body">
+                    <form asp-action="Settings" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input asp-for="IsEnabled" class="form-check-input" />
+                            <label asp-for="IsEnabled" class="form-check-label">啟用 AI 智慧入庫</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ApiEndpoint" class="form-label">模型 API 端點</label>
+                            <input asp-for="ApiEndpoint" class="form-control" placeholder="例如：https://api.example.com/v1/recognize 或 http://localhost:11434" />
+                            <span asp-validation-for="ApiEndpoint" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ApiKey" class="form-label">API 金鑰</label>
+                            <input asp-for="ApiKey" type="password" class="form-control" placeholder="@(hasApiKey ? "已設定，留空表示不變更" : "尚未設定，若模型不需要驗證可留空")" />
+                            <span asp-validation-for="ApiKey" class="text-danger"></span>
+                            <div class="form-text">@(hasApiKey ? "目前已儲存一組金鑰（不顯示內容）" : "目前尚未設定")</div>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase mt-4">支援的輸入方式</h6>
+                        <div class="form-check mb-2">
+                            <input asp-for="SupportsImageInput" class="form-check-input" />
+                            <label asp-for="SupportsImageInput" class="form-check-label">照片辨識</label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input asp-for="SupportsTextInput" class="form-check-input" />
+                            <label asp-for="SupportsTextInput" class="form-check-label">文字描述</label>
+                        </div>
+
+                        @if (updatedAt.HasValue)
+                        {
+                            <p class="text-muted small">上次更新：@updatedAt.Value.ToString("yyyy-MM-dd HH:mm") @updatedBy</p>
+                        }
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 儲存設定
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> 關於 AI 智慧入庫</h6>
+                <ul class="mb-0">
+                    <li>使用者在「AI 智慧入庫」頁面上傳照片或輸入文字描述</li>
+                    <li>系統會記錄每次輸入內容，並在確認畫面讓使用者手動核對／填寫物資資訊</li>
+                    <li>確認後才會真的寫入庫存，避免 AI 誤判造成資料錯亂</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

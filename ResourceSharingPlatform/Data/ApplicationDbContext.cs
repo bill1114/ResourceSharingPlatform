@@ -18,6 +18,8 @@ namespace ResourceSharingPlatform.Data
         public DbSet<SupplyDonationLog> SupplyDonationLogs { get; set; }
         public DbSet<LineNotificationSettings> LineNotificationSettings { get; set; }
         public DbSet<SupplyDisposalLog> SupplyDisposalLogs { get; set; }
+        public DbSet<AIStockInSettings> AIStockInSettings { get; set; }
+        public DbSet<AIStockInLog> AIStockInLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,6 +34,8 @@ namespace ResourceSharingPlatform.Data
             modelBuilder.Entity<SupplyDonationLog>().ToTable("SupplyDonationLog");
             modelBuilder.Entity<LineNotificationSettings>().ToTable("LineNotificationSettings");
             modelBuilder.Entity<SupplyDisposalLog>().ToTable("SupplyDisposalLog");
+            modelBuilder.Entity<AIStockInSettings>().ToTable("AIStockInSettings");
+            modelBuilder.Entity<AIStockInLog>().ToTable("AIStockInLog");
 
             // Configure relationships
             modelBuilder.Entity<SupplyItem>()
@@ -99,6 +103,22 @@ namespace ResourceSharingPlatform.Data
                 .WithMany()
                 .HasForeignKey(x => x.LocationId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AIStockInLog>()
+                .HasOne(x => x.Location)
+                .WithMany()
+                .HasForeignKey(x => x.LocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AIStockInLog>()
+                .HasOne(x => x.ConfirmedSupplyItem)
+                .WithMany()
+                .HasForeignKey(x => x.ConfirmedSupplyItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AIStockInLog>()
+                .Property(x => x.Confidence)
+                .HasPrecision(5, 4);
 
             // Configure decimal precision
             modelBuilder.Entity<SupplyLocation>()

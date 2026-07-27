@@ -99,5 +99,27 @@ namespace ResourceSharingPlatform.Data
 
             await context.SaveChangesAsync();
         }
+
+        // Ensures a single AIStockInSettings row exists (disabled, no endpoint/key)
+        // so the settings page has something to edit once the AI model is wired up.
+        public static async Task EnsureAIStockInSettingsAsync(IServiceProvider services)
+        {
+            using var scope = services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            if (await context.AIStockInSettings.AnyAsync())
+            {
+                return;
+            }
+
+            context.AIStockInSettings.Add(new AIStockInSettings
+            {
+                IsEnabled = false,
+                SupportsImageInput = true,
+                SupportsTextInput = true
+            });
+
+            await context.SaveChangesAsync();
+        }
     }
 }

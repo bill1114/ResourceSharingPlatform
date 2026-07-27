@@ -194,7 +194,58 @@ BEGIN
 END
 GO
 -- ================================================================
--- 9. 既有資料庫升級：補上規格/圖片/分類、轉移批次與確認欄位
+-- 9. AI 智慧入庫設定表：AIStockInSettings（單一設定列，尚未串接真實外部模型 API）
+-- ================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AIStockInSettings')
+BEGIN
+    CREATE TABLE AIStockInSettings (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        IsEnabled BIT NOT NULL DEFAULT 0,
+        ApiEndpoint NVARCHAR(300) NULL,
+        ApiKey NVARCHAR(300) NULL,
+        SupportsImageInput BIT NOT NULL DEFAULT 1,
+        SupportsTextInput BIT NOT NULL DEFAULT 1,
+        UpdatedAt DATETIME NULL,
+        UpdatedBy NVARCHAR(50) NULL
+    );
+END
+GO
+-- ================================================================
+-- 10. AI 智慧入庫辨識紀錄表：AIStockInLog
+-- ================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AIStockInLog')
+BEGIN
+    CREATE TABLE AIStockInLog (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        LocationId INT NOT NULL,
+        InputType NVARCHAR(20) NOT NULL DEFAULT 'Image',
+        InputText NVARCHAR(500) NULL,
+        InputImagePath NVARCHAR(300) NULL,
+        SuggestedCategory NVARCHAR(50) NULL,
+        SuggestedItemName NVARCHAR(100) NULL,
+        SuggestedSpecification NVARCHAR(200) NULL,
+        SuggestedQuantity INT NULL,
+        SuggestedUnit NVARCHAR(20) NULL,
+        SuggestedStockType NVARCHAR(20) NULL,
+        SuggestedExpirationDate DATE NULL,
+        SuggestedSafetyStock INT NULL,
+        SuggestedRemark NVARCHAR(300) NULL,
+        Confidence DECIMAL(5,4) NULL,
+        RawResponse NVARCHAR(MAX) NULL,
+        IsConfirmed BIT NOT NULL DEFAULT 0,
+        ConfirmedSupplyItemId INT NULL,
+        Operator NVARCHAR(50) NULL,
+        CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+        ConfirmedAt DATETIME NULL,
+        CONSTRAINT FK_AIStockInLog_Location FOREIGN KEY (LocationId)
+            REFERENCES SupplyLocation(Id),
+        CONSTRAINT FK_AIStockInLog_SupplyItem FOREIGN KEY (ConfirmedSupplyItemId)
+            REFERENCES SupplyItem(Id)
+    );
+END
+GO
+-- ================================================================
+-- 11. 既有資料庫升級：補上規格/圖片/分類、轉移批次與確認欄位
 -- ================================================================
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SupplyItem') AND name = 'Specification')
 BEGIN
@@ -336,6 +387,18 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyDisposalLog_LocationId')
 BEGIN
     CREATE INDEX IX_SupplyDisposalLog_LocationId ON SupplyDisposalLog(LocationId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_AIStockInLog_LocationId')
+BEGIN
+    CREATE INDEX IX_AIStockInLog_LocationId ON AIStockInLog(LocationId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_AIStockInLog_ConfirmedSupplyItemId')
+BEGIN
+    CREATE INDEX IX_AIStockInLog_ConfirmedSupplyItemId ON AIStockInLog(ConfirmedSupplyItemId);
 END
 GO
 
