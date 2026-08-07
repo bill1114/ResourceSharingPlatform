@@ -1,0 +1,23 @@
+@model ResourceSharingPlatform.Models.ViewModels.LocationSafetyStockFormViewModel
+@{ ViewData["Title"] = "據點安全庫存"; }
+<div class="container mt-4">
+    <h2><i class="bi bi-buildings"></i> 各據點安全庫存</h2>
+    <p class="text-muted">@Model.DefinitionName；各規格數量會合併，以 @Model.Unit 為最小計算單位。</p>
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="LocationSafety" method="post">
+            <input asp-for="DefinitionId" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <table class="table align-middle"><thead><tr><th>據點</th><th>安全庫存（@Model.Unit）</th></tr></thead><tbody>
+            @for (var i = 0; i < Model.Locations.Count; i++)
+            { <tr><td>@Model.Locations[i].LocationName
+                    <input asp-for="Locations[i].LocationId" type="hidden" />
+                    <input asp-for="Locations[i].LocationName" type="hidden" /></td>
+                <td><input asp-for="Locations[i].SafetyStock" class="form-control" type="number" min="0" />
+                    <span asp-validation-for="Locations[i].SafetyStock" class="text-danger"></span></td></tr> }
+            </tbody></table>
+            <button class="btn btn-primary"><i class="bi bi-check-circle"></i> 儲存據點門檻</button>
+            <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+        </form>
+    </div></div>
+</div>
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

@@ -1,0 +1,40 @@
+@model IEnumerable<ResourceSharingPlatform.Models.InventoryItemDefinition>
+@{ ViewData["Title"] = "庫存種類設定"; var keyword = ViewBag.Keyword as string; }
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div><h2><i class="bi bi-card-list"></i> 庫存種類設定</h2>
+            <p class="text-muted mb-0">安全庫存依物資種類與名稱合計，不區分規格。</p></div>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-circle"></i> 新增種類</a>
+    </div>
+    <div class="card shadow-sm mb-4"><div class="card-body">
+        <form method="get" class="row g-2"><div class="col-md-9">
+            <input name="keyword" value="@keyword" class="form-control" placeholder="搜尋物資種類或名稱" />
+        </div><div class="col-md-3">
+            <button class="btn btn-primary"><i class="bi bi-search"></i> 搜尋</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">清除</a>
+        </div></form>
+    </div></div>
+    <div class="card shadow-sm"><div class="card-body"><div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th>物資種類</th><th>物資名稱</th><th>最小單位</th>
+                <th>規格數</th><th>總量安全庫存</th><th>據點門檻</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody>
+            @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-4">尚未建立庫存種類</td></tr> }
+            @foreach (var item in Model)
+            {
+                <tr><td>@item.Category</td><td><strong>@item.ItemName</strong></td><td>@item.Unit</td>
+                    <td>@item.Variants.Count(x => x.IsActive)</td><td>@item.GlobalSafetyStock @item.Unit</td>
+                    <td>@item.LocationSafetyStocks.Count 筆</td>
+                    <td><span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "啟用" : "停用")</span></td>
+                    <td class="text-nowrap">
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">編輯</a>
+                        <a asp-action="Variants" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">規格</a>
+                        <a asp-action="LocationSafety" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">據點門檻</a>
+                        @if (item.IsActive) { <form asp-action="Disable" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('確定停用嗎？');"><button class="btn btn-sm btn-outline-danger">停用</button></form> }
+                    </td></tr>
+            }
+            </tbody>
+        </table>
+    </div></div></div>
+</div>

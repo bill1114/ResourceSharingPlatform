@@ -10,39 +10,23 @@
     </h2>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-2">
-            <div class="card shadow-sm border-0 bg-primary text-white">
-                <div class="card-body">
-                    <h6><i class="bi bi-buildings"></i> 據點數</h6>
-                    <h2 class="mb-0">@Model.TotalLocationCount</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card shadow-sm border-0 bg-info text-white">
-                <div class="card-body">
-                    <h6><i class="bi bi-box"></i> 物資種類</h6>
-                    <h2 class="mb-0">@Model.TotalItemTypeCount</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card shadow-sm border-0 bg-success text-white">
-                <div class="card-body">
-                    <h6><i class="bi bi-stack"></i> 總數量</h6>
-                    <h2 class="mb-0">@Model.TotalQuantity</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="card shadow-sm border-danger">
                 <div class="card-body text-danger">
-                    <h6><i class="bi bi-exclamation-triangle-fill"></i> 低庫存</h6>
+                    <h6><i class="bi bi-exclamation-triangle-fill"></i> 據點低庫存</h6>
                     <h2 class="mb-0">@Model.LowStockCount</h2>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-danger">
+                <div class="card-body text-danger">
+                    <h6><i class="bi bi-globe"></i> 總量不足</h6>
+                    <h2 class="mb-0">@Model.GlobalLowStockCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card shadow-sm border-warning">
                 <div class="card-body text-warning">
                     <h6><i class="bi bi-clock-fill"></i> 即將過期</h6>
@@ -50,7 +34,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="card shadow-sm border-dark">
                 <div class="card-body text-dark">
                     <h6><i class="bi bi-x-circle-fill"></i> 已過期</h6>
@@ -124,7 +108,7 @@
                     <i class="bi bi-exclamation-triangle-fill"></i> 低於警戒水位物資
                 </div>
                 <div class="card-body">
-                    @if (Model.LowStockItems.Any())
+                    @if (Model.LocationLowStockItems.Any())
                     {
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover table-sm">
@@ -137,12 +121,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in Model.LowStockItems.Take(10))
+                                    @foreach (var item in Model.LocationLowStockItems.Take(10))
                                     {
                                         <tr>
-                                            <td>@item.Location?.LocationName</td>
-                                            <td><strong>@item.ItemName</strong></td>
-                                            <td class="text-danger"><strong>@item.Quantity</strong> @item.Unit</td>
+                                            <td>@item.LocationName</td>
+                                            <td><strong>@item.Category／@item.ItemName</strong></td>
+                                            <td class="text-danger"><strong>@item.TotalQuantity</strong> @item.Unit</td>
                                             <td>@item.SafetyStock @item.Unit</td>
                                         </tr>
                                     }
@@ -160,30 +144,28 @@
 
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm">
-                <div class="card-header bg-warning text-dark">
-                    <i class="bi bi-clock-fill"></i> 即將過期物資
+                <div class="card-header bg-danger text-white">
+                    <i class="bi bi-globe"></i> 全系統總量不足
                 </div>
                 <div class="card-body">
-                    @if (Model.ExpiringSoonItems.Any())
+                    @if (Model.GlobalLowStockItems.Any())
                     {
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover table-sm">
                                 <thead>
                                     <tr>
-                                        <th>據點</th>
                                         <th>物資</th>
-                                        <th>數量</th>
-                                        <th>有效期限</th>
+                                        <th>目前數量</th>
+                                        <th>安全庫存</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in Model.ExpiringSoonItems.Take(10))
+                                    @foreach (var item in Model.GlobalLowStockItems.Take(10))
                                     {
                                         <tr>
-                                            <td>@item.Location?.LocationName</td>
-                                            <td><strong>@item.ItemName</strong></td>
-                                            <td>@item.Quantity @item.Unit</td>
-                                            <td class="text-warning"><strong>@item.ExpirationDate?.ToString("yyyy-MM-dd")</strong></td>
+                                            <td><strong>@item.Category／@item.ItemName</strong></td>
+                                            <td class="text-danger"><strong>@item.TotalQuantity</strong> @item.Unit</td>
+                                            <td>@item.SafetyStock @item.Unit</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -192,8 +174,37 @@
                     }
                     else
                     {
-                        <p class="text-muted">沒有即將過期的物資</p>
+                        <p class="text-muted">沒有總量不足的物資</p>
                     }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <i class="bi bi-clock-fill"></i> 即將過期物資
+                </div>
+                <div class="card-body">
+                    @if (Model.ExpiringSoonItems.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover table-sm">
+                                <thead><tr><th>據點</th><th>物資</th><th>規格</th><th>數量</th><th>有效期限</th></tr></thead>
+                                <tbody>
+                                @foreach (var item in Model.ExpiringSoonItems.Take(10))
+                                {
+                                    <tr><td>@item.Location?.LocationName</td><td><strong>@item.ItemName</strong></td>
+                                        <td>@(item.Specification ?? "－")</td><td>@item.Quantity @item.Unit</td>
+                                        <td class="text-warning"><strong>@item.ExpirationDate?.ToString("yyyy-MM-dd")</strong></td></tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else { <p class="text-muted">沒有即將過期的物資</p> }
                 </div>
             </div>
         </div>

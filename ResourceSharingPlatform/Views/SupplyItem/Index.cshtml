@@ -9,6 +9,8 @@
     var selectedStockType = ViewBag.SelectedStockType as string;
     var keyword = ViewBag.Keyword as string;
     var itemSummary = ViewBag.ItemSummary as List<SupplyItemSummaryViewModel>;
+    var lowStockItemIds = ViewBag.LowStockItemIds as HashSet<int> ?? new();
+    var locationSafetyByItemId = ViewBag.LocationSafetyByItemId as Dictionary<int, int> ?? new();
 }
 
 <div class="container-fluid mt-4">
@@ -183,10 +185,24 @@
                                         }
                                     </td>
                                     <td><i class="bi bi-building text-muted"></i> @item.Location?.LocationName</td>
-                                    <td class="text-end">@item.SafetyStock</td>
+                                    <td class="text-end">@locationSafetyByItemId.GetValueOrDefault(item.Id)</td>
                                     <td>
-                                        <span class="badge @item.GetStatusBadgeClass()">
-                                            @item.GetStatus()
+                                        @{
+                                            var isAggregateLow = lowStockItemIds.Contains(item.Id);
+                                            var status = isAggregateLow ? "低庫存"
+                                                : item.ExpirationDate < DateTime.Today ? "已過期"
+                                                : item.ExpirationDate <= DateTime.Today.AddDays(30) ? "即將過期"
+                                                : "正常";
+                                            var badgeClass = status switch
+                                            {
+                                                "低庫存" => "bg-danger",
+                                                "已過期" => "bg-dark",
+                                                "即將過期" => "bg-warning text-dark",
+                                                _ => "bg-success"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass">
+                                            @status
                                         </span>
                                     </td>
                                     <td>

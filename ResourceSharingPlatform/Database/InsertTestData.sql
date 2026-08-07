@@ -1,78 +1,100 @@
--- ================================================================
--- ¦a¤èª«¸êºŞ²z¥­¥x - ´ú¸Õ¸ê®Æ
--- Description: ´¡¤Jªì©l´ú¸Õ¸ê®Æ
--- ================================================================
+ï»¿-- åœ°æ–¹ç‰©è³‡ç®¡ç†å¹³å° - æ¸¬è©¦è³‡æ–™
+
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET ARITHABORT ON;
+SET NUMERIC_ROUNDABORT OFF;
+GO
+-- è«‹å…ˆåŸ·è¡Œ CreateDatabase.sql
 
 USE LocalSupplyDB;
 GO
 
--- ================================================================
--- 1. ´¡¤J´ú¸Õ¾ÚÂI¸ê®Æ
--- ================================================================
-SET IDENTITY_INSERT SupplyLocation ON;
-
-IF NOT EXISTS (SELECT * FROM SupplyLocation WHERE Id = 1)
+IF NOT EXISTS (SELECT 1 FROM SupplyLocation)
 BEGIN
-    INSERT INTO SupplyLocation (Id, LocationName, Address, Latitude, Longitude, ContactPerson, Phone, IsActive, CreatedAt)
+    INSERT INTO SupplyLocation
+        (LocationName, Address, Latitude, Longitude, ContactPerson, Phone)
     VALUES
-    (1, N'²Ä¤@ª«¸ê¾ÚÂI', N'¶³ªL¿¤¤æ¤»¥«', 23.7078, 120.5439, N'¤ı¥ı¥Í', N'05-0000001', 1, GETDATE()),
-    (2, N'²Ä¤Gª«¸ê¾ÚÂI', N'¶³ªL¿¤ªê§ÀÂí', 23.7092, 120.4313, N'³¯¤p©j', N'05-0000002', 1, GETDATE()),
-    (3, N'²Ä¤Tª«¸ê¾ÚÂI', N'¶³ªL¿¤¦èÁ³Âí', 23.8000, 120.4600, N'ªL¥ı¥Í', N'05-0000003', 1, GETDATE());
-    
-    PRINT '¾ÚÂI´ú¸Õ¸ê®Æ´¡¤J§¹¦¨¡I';
+        (N'ç¬¬ä¸€ç‰©è³‡æ“šé»', N'å°åŒ—å¸‚ä¸­æ­£å€æ¸¬è©¦è·¯1è™Ÿ', 25.0330000, 121.5654000, N'ç‹å°æ˜', N'02-11111111'),
+        (N'ç¬¬äºŒç‰©è³‡æ“šé»', N'æ–°åŒ—å¸‚æ¿æ©‹å€æ¸¬è©¦è·¯2è™Ÿ', 25.0114000, 121.4618000, N'æå°è¯', N'02-22222222'),
+        (N'ç¬¬ä¸‰ç‰©è³‡æ“šé»', N'æ¡ƒåœ’å¸‚æ¡ƒåœ’å€æ¸¬è©¦è·¯3è™Ÿ', 24.9937000, 121.3010000, N'é™³ç¾ç²', N'03-33333333');
 END
-ELSE
-BEGIN
-    PRINT '¾ÚÂI´ú¸Õ¸ê®Æ¤w¦s¦b¡A¸õ¹L´¡¤J¡C';
-END
-
-SET IDENTITY_INSERT SupplyLocation OFF;
 GO
 
--- ================================================================
--- 2. ´¡¤J´ú¸Õª«¸ê¸ê®Æ
--- ================================================================
-SET IDENTITY_INSERT SupplyItem ON;
-
-IF NOT EXISTS (SELECT * FROM SupplyItem WHERE Id = 1)
+IF NOT EXISTS (SELECT 1 FROM InventoryItemDefinition)
 BEGIN
-    INSERT INTO SupplyItem (Id, Category, ItemName, Quantity, Unit, ExpirationDate, LocationId, SafetyStock, Remark, IsActive, CreatedAt)
+    INSERT INTO InventoryItemDefinition
+        (Category, ItemName, Unit, GlobalSafetyStock)
     VALUES
-    (1, N'­¹«~', N'¶¼¥Î¤ô', 500, N'²~', '2026-12-31', 1, 100, N'½c¸Ë¶¼¥Î¤ô', 1, GETDATE()),
-    (2, N'­¹«~', N'ªwÄÑ', 120, N'½c', '2026-08-31', 1, 50, N'ºò«æÂ³­¹', 1, GETDATE()),
-    (3, N'ÂåÀø', N'«æ±Ï¥]', 30, N'²Õ', '2027-01-31', 2, 20, N'°ò¥»«æ±Ï¥Î«~', 1, GETDATE()),
-    (4, N'¨¾Å@', N'¤f¸n', 2000, N'¤ù', '2026-06-30', 2, 500, N'¤@¯ëÂåÀø¤f¸n', 1, GETDATE()),
-    (5, N'¥Í¬¡', N'¤ò´à', 80, N'¥ó', NULL, 3, 30, N'«O·x¥Î«~', 1, GETDATE());
-    
-    PRINT 'ª«¸ê´ú¸Õ¸ê®Æ´¡¤J§¹¦¨¡I';
+        (N'é£Ÿå“', N'é£²ç”¨æ°´', N'ç“¶', 1000),
+        (N'ç”Ÿæ´»', N'å°¿å¸ƒ', N'ä»¶', 100),
+        (N'è¼”å…·', N'è¼ªæ¤…', N'ä»¶', 10);
 END
-ELSE
-BEGIN
-    PRINT 'ª«¸ê´ú¸Õ¸ê®Æ¤w¦s¦b¡A¸õ¹L´¡¤J¡C';
-END
-
-SET IDENTITY_INSERT SupplyItem OFF;
 GO
 
--- ================================================================
--- 3. ¬d¸ßÅçÃÒ
--- ================================================================
-PRINT '=== ¾ÚÂI¸ê®Æ ===';
-SELECT * FROM SupplyLocation;
+DECLARE @WaterDefinitionId INT = (SELECT TOP 1 Id FROM InventoryItemDefinition WHERE Category=N'é£Ÿå“' AND ItemName=N'é£²ç”¨æ°´' AND IsActive=1);
+DECLARE @DiaperDefinitionId INT = (SELECT TOP 1 Id FROM InventoryItemDefinition WHERE Category=N'ç”Ÿæ´»' AND ItemName=N'å°¿å¸ƒ' AND IsActive=1);
+DECLARE @WheelchairDefinitionId INT = (SELECT TOP 1 Id FROM InventoryItemDefinition WHERE Category=N'è¼”å…·' AND ItemName=N'è¼ªæ¤…' AND IsActive=1);
 
-PRINT '=== ª«¸ê¸ê®Æ ===';
-SELECT 
-    si.Id,
-    si.Category,
-    si.ItemName,
-    si.Quantity,
-    si.Unit,
-    si.ExpirationDate,
-    sl.LocationName,
-    si.SafetyStock,
-    si.Remark
-FROM SupplyItem si
-INNER JOIN SupplyLocation sl ON si.LocationId = sl.Id;
+IF NOT EXISTS (SELECT 1 FROM InventoryItemVariant WHERE InventoryItemDefinitionId=@WaterDefinitionId AND Specification=N'600ml' AND IsActive=1)
+    INSERT INTO InventoryItemVariant (InventoryItemDefinitionId, Specification) VALUES (@WaterDefinitionId, N'600ml');
+IF NOT EXISTS (SELECT 1 FROM InventoryItemVariant WHERE InventoryItemDefinitionId=@DiaperDefinitionId AND Specification=N'L' AND IsActive=1)
+    INSERT INTO InventoryItemVariant (InventoryItemDefinitionId, Specification) VALUES (@DiaperDefinitionId, N'L');
+IF NOT EXISTS (SELECT 1 FROM InventoryItemVariant WHERE InventoryItemDefinitionId=@DiaperDefinitionId AND Specification=N'XL' AND IsActive=1)
+    INSERT INTO InventoryItemVariant (InventoryItemDefinitionId, Specification) VALUES (@DiaperDefinitionId, N'XL');
+IF NOT EXISTS (SELECT 1 FROM InventoryItemVariant WHERE InventoryItemDefinitionId=@WheelchairDefinitionId AND Specification=N'XL' AND IsActive=1)
+    INSERT INTO InventoryItemVariant (InventoryItemDefinitionId, Specification) VALUES (@WheelchairDefinitionId, N'XL');
 
-PRINT '´ú¸Õ¸ê®Æ¸ü¤J§¹¦¨¡I';
+DECLARE @Location1 INT = (SELECT TOP 1 Id FROM SupplyLocation WHERE LocationName=N'ç¬¬ä¸€ç‰©è³‡æ“šé»');
+DECLARE @Location2 INT = (SELECT TOP 1 Id FROM SupplyLocation WHERE LocationName=N'ç¬¬äºŒç‰©è³‡æ“šé»');
+DECLARE @Location3 INT = (SELECT TOP 1 Id FROM SupplyLocation WHERE LocationName=N'ç¬¬ä¸‰ç‰©è³‡æ“šé»');
+
+IF NOT EXISTS (SELECT 1 FROM LocationInventorySafetyStock WHERE LocationId=@Location1 AND InventoryItemDefinitionId=@WaterDefinitionId)
+    INSERT INTO LocationInventorySafetyStock (LocationId, InventoryItemDefinitionId, SafetyStock) VALUES (@Location1, @WaterDefinitionId, 60);
+IF NOT EXISTS (SELECT 1 FROM LocationInventorySafetyStock WHERE LocationId=@Location2 AND InventoryItemDefinitionId=@WaterDefinitionId)
+    INSERT INTO LocationInventorySafetyStock (LocationId, InventoryItemDefinitionId, SafetyStock) VALUES (@Location2, @WaterDefinitionId, 60);
+IF NOT EXISTS (SELECT 1 FROM LocationInventorySafetyStock WHERE LocationId=@Location1 AND InventoryItemDefinitionId=@DiaperDefinitionId)
+    INSERT INTO LocationInventorySafetyStock (LocationId, InventoryItemDefinitionId, SafetyStock) VALUES (@Location1, @DiaperDefinitionId, 100);
+IF NOT EXISTS (SELECT 1 FROM LocationInventorySafetyStock WHERE LocationId=@Location3 AND InventoryItemDefinitionId=@DiaperDefinitionId)
+    INSERT INTO LocationInventorySafetyStock (LocationId, InventoryItemDefinitionId, SafetyStock) VALUES (@Location3, @DiaperDefinitionId, 10);
+
+DECLARE @WaterVariantId INT = (SELECT TOP 1 Id FROM InventoryItemVariant WHERE InventoryItemDefinitionId=@WaterDefinitionId AND Specification=N'600ml' AND IsActive=1);
+DECLARE @DiaperLVariantId INT = (SELECT TOP 1 Id FROM InventoryItemVariant WHERE InventoryItemDefinitionId=@DiaperDefinitionId AND Specification=N'L' AND IsActive=1);
+DECLARE @DiaperXLVariantId INT = (SELECT TOP 1 Id FROM InventoryItemVariant WHERE InventoryItemDefinitionId=@DiaperDefinitionId AND Specification=N'XL' AND IsActive=1);
+
+IF NOT EXISTS (SELECT 1 FROM SupplyItem WHERE LocationId=@Location1 AND InventoryItemVariantId=@WaterVariantId AND ExpirationDate='2027-12-31' AND IsActive=1)
+BEGIN
+    INSERT INTO SupplyItem
+        (Category, ItemName, Specification, Quantity, Unit, StockType, ExpirationDate,
+         InventoryItemVariantId, LocationId, SafetyStock, Remark)
+    VALUES
+        (N'é£Ÿå“', N'é£²ç”¨æ°´', N'600ml', 120, N'ç“¶', N'HasExpiry', '2027-12-31',
+         @WaterVariantId, @Location1, 60, N'æ¸¬è©¦è³‡æ–™');
+END
+
+IF NOT EXISTS (SELECT 1 FROM SupplyItem WHERE LocationId=@Location1 AND InventoryItemVariantId=@DiaperLVariantId AND IsActive=1)
+BEGIN
+    INSERT INTO SupplyItem
+        (Category, ItemName, Specification, Quantity, Unit, StockType,
+         InventoryItemVariantId, LocationId, SafetyStock, Remark)
+    VALUES
+        (N'ç”Ÿæ´»', N'å°¿å¸ƒ', N'L', 80, N'ä»¶', N'NoExpiry',
+         @DiaperLVariantId, @Location1, 100, N'æ¸¬è©¦è³‡æ–™');
+END
+
+IF NOT EXISTS (SELECT 1 FROM SupplyItem WHERE LocationId=@Location3 AND InventoryItemVariantId=@DiaperXLVariantId AND IsActive=1)
+BEGIN
+    INSERT INTO SupplyItem
+        (Category, ItemName, Specification, Quantity, Unit, StockType,
+         InventoryItemVariantId, LocationId, SafetyStock, Remark)
+    VALUES
+        (N'ç”Ÿæ´»', N'å°¿å¸ƒ', N'XL', 30, N'ä»¶', N'NoExpiry',
+         @DiaperXLVariantId, @Location3, 10, N'æ¸¬è©¦è³‡æ–™');
+END
+GO
+
+PRINT N'æ¸¬è©¦è³‡æ–™å»ºç«‹å®Œæˆã€‚';
 GO

@@ -1,0 +1,32 @@
+@model ResourceSharingPlatform.Models.ViewModels.InventoryDefinitionFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Category" class="form-label">物資種類 <span class="text-danger">*</span></label>
+        <input asp-for="Category" class="form-control" placeholder="例如：食品、醫療、防護" />
+        <span asp-validation-for="Category" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="ItemName" class="form-label">物資名稱 <span class="text-danger">*</span></label>
+        <input asp-for="ItemName" class="form-control" placeholder="例如：飲用水" />
+        <span asp-validation-for="ItemName" class="text-danger"></span>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Unit" class="form-label">最小計算單位 <span class="text-danger">*</span></label>
+        <input asp-for="Unit" class="form-control" placeholder="例如：瓶、件、片" list="inventoryUnitList" />
+        <datalist id="inventoryUnitList">
+            <option value="瓶"></option><option value="箱"></option><option value="組"></option>
+            <option value="件"></option><option value="片"></option><option value="包"></option>
+        </datalist>
+        <span asp-validation-for="Unit" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="GlobalSafetyStock" class="form-label">全系統總量安全庫存 <span class="text-danger">*</span></label>
+        <input asp-for="GlobalSafetyStock" class="form-control" type="number" min="0" />
+        <div class="form-text">所有據點相同物資加總後的警戒門檻。</div>
+        <span asp-validation-for="GlobalSafetyStock" class="text-danger"></span>
+    </div>
+</div>

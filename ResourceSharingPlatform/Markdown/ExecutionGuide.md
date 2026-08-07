@@ -1,373 +1,117 @@
-# ¦a¤èª«¸êºŞ²z¥­¥x - °õ¦æ¨BÆJ«ü«n
+# åœ°æ–¹ç‰©è³‡ç®¡ç†å¹³å°ï¼åŸ·è¡Œã€æ‰“åŒ…èˆ‡éƒ¨ç½²æŒ‡å—
 
-## ?? «e¸m·Ç³ÆÀË¬d²M³æ
+æœ€å¾Œæ›´æ–°ï¼š2026-08-07
 
-### 1. ¶}µoÀô¹Ò½T»{
-- [x] ¤w¦w¸Ë Visual Studio 2022
-- [ ] ¤w¦w¸Ë .NET 8 SDK
-- [ ] ¤w¦w¸Ë SQL Server¡]LocalDB¡BExpress ©Î§¹¾ãª©¬Ò¥i¡^
-- [ ] ¤w¦w¸Ë SQL Server Management Studio (SSMS)
+## ç’°å¢ƒéœ€æ±‚
 
-### 2. ½T»{ª©¥»
+- Windows 10/11 æˆ– Windows Server
+- .NET 8 SDKï¼ˆå»ºç½®ï¼‰æˆ– ASP.NET Core 8 Hosting Bundleï¼ˆIIS åŸ·è¡Œï¼‰
+- SQL Server
+- `sqlcmd`ï¼ˆä½¿ç”¨è‡ªå‹•å»ºåº«è…³æœ¬æ™‚ï¼‰
+- Visual Studio 2022 å¯é¸
+
+## é–‹ç™¼ç’°å¢ƒå•Ÿå‹•
+
+åœ¨æ–¹æ¡ˆæ ¹ç›®éŒ„åŸ·è¡Œï¼š
+
 ```powershell
-# ÀË¬d .NET ª©¥»
-dotnet --version
-# À³Åã¥Ü 8.x.x
-
-# ÀË¬d SQL Server
-# ¦b SSMS ¤¤³s½u«á°õ¦æ¡GSELECT @@VERSION
+.\Start.bat
 ```
 
----
+è…³æœ¬æœƒï¼š
 
-## ?? ¨BÆJ¤@¡GÁÙ­ì NuGet ®M¥ó
+1. é‚„åŸ NuGet å¥—ä»¶ã€‚
+2. å»ºç½® Debug ç‰ˆæœ¬ã€‚
+3. åŸ·è¡Œ `Database/CreateDatabase.sql`ã€‚
+4. å•Ÿå‹• `http://localhost:5140`ã€‚
+5. å°‡ PID å¯«å…¥ `.run.pid`ã€‚
 
-### ¤èªk 1¡G¨Ï¥Î Visual Studio
-1. ¶}±Ò `ResourceSharingPlatform.sln`
-2. ¦b Solution Explorer ¤¤¥kÁäÂIÀ»±M®×
-3. ¿ï¾Ü¡uÁÙ­ì NuGet ®M¥ó¡v
+åœæ­¢ï¼š
 
-### ¤èªk 2¡G¨Ï¥Î©R¥O¦C
 ```powershell
-cd C:\Users\YJ\source\repos\ResourceSharingPlatform\ResourceSharingPlatform
-dotnet restore
+.\Stop.bat
 ```
 
-### ¹w´Á¦w¸Ëªº®M¥ó
-- Microsoft.EntityFrameworkCore.SqlServer (8.0.0)
-- Microsoft.EntityFrameworkCore.Tools (8.0.0)
+## æ‰‹å‹•å»ºç½®
 
----
-
-## ??? ¨BÆJ¤G¡G«Ø¥ß¸ê®Æ®w
-
-### 2.1 ³s½u¨ì SQL Server
-¶}±Ò SQL Server Management Studio (SSMS)¡A³s½u¨ì±zªº SQL Server ¹ê¨Ò¡G
-- **¦øªA¾¹¦WºÙ**¡G`.` ©Î `(localdb)\MSSQLLocalDB` ©Î±zªº¦øªA¾¹¦WºÙ
-- **ÅçÃÒ**¡GWindows Authentication
-
-### 2.2 °õ¦æ¸ê®Æ®w«Ø¥ß¸}¥»
-1. ¶}±ÒÀÉ®×¡G`ResourceSharingPlatform\Database\CreateDatabase.sql`
-2. ¦b SSMS ¤¤°õ¦æ¾ã­Ó¸}¥»¡]«ö F5¡^
-3. ½T»{°T®§¡G¡u¸ê®Æ®w»P¸ê®Æªí«Ø¥ß§¹¦¨¡I¡v
-
-### 2.3 ÅçÃÒ¸ê®Æªí
-```sql
-USE LocalSupplyDB;
-GO
-
--- ÀË¬d¸ê®Æªí¬O§_«Ø¥ß
-SELECT TABLE_NAME 
-FROM INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_TYPE = 'BASE TABLE'
-ORDER BY TABLE_NAME;
-
--- À³¸ÓÅã¥Ü¡G
--- SupplyItem
--- SupplyLocation
--- SupplyTransferLog
--- UserAccount
-```
-
-### 2.4 ¸ü¤J´ú¸Õ¸ê®Æ
-1. ¶}±ÒÀÉ®×¡G`ResourceSharingPlatform\Database\InsertTestData.sql`
-2. ¦b SSMS ¤¤°õ¦æ¾ã­Ó¸}¥»¡]«ö F5¡^
-3. ½T»{°T®§¡G¡u´ú¸Õ¸ê®Æ¸ü¤J§¹¦¨¡I¡v
-
-### 2.5 ÅçÃÒ´ú¸Õ¸ê®Æ
-```sql
-USE LocalSupplyDB;
-GO
-
--- ÀË¬d¾ÚÂI¼Æ¶q¡]À³¬° 3¡^
-SELECT COUNT(*) FROM SupplyLocation;
-
--- ÀË¬dª«¸ê¼Æ¶q¡]À³¬° 5¡^
-SELECT COUNT(*) FROM SupplyItem;
-
--- ¬d¬İ§¹¾ã¸ê®Æ
-SELECT * FROM SupplyLocation;
-SELECT * FROM SupplyItem;
-```
-
----
-
-## ?? ¨BÆJ¤T¡G³]©w³s½u¦r¦ê
-
-### 3.1 ¶}±Ò appsettings.json
-ÀÉ®×¦ì¸m¡G`ResourceSharingPlatform\appsettings.json`
-
-### 3.2 ÀË¬d³s½u¦r¦ê
-¹w³]³s½u¦r¦ê¡G
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=.;Database=LocalSupplyDB;Trusted_Connection=True;TrustServerCertificate=True;"
-  }
-}
-```
-
-### 3.3 ®Ú¾Ú±zªºÀô¹Ò½Õ¾ã
-
-#### ¨Ï¥Î SQL Server Express
-```json
-"Server=.\\SQLEXPRESS;Database=LocalSupplyDB;Trusted_Connection=True;TrustServerCertificate=True;"
-```
-
-#### ¨Ï¥Î LocalDB
-```json
-"Server=(localdb)\\MSSQLLocalDB;Database=LocalSupplyDB;Trusted_Connection=True;TrustServerCertificate=True;"
-```
-
-#### ¨Ï¥Î¨ã¦W SQL Server ¹ê¨Ò
-```json
-"Server=YOUR_SERVER_NAME;Database=LocalSupplyDB;Trusted_Connection=True;TrustServerCertificate=True;"
-```
-
-#### ¨Ï¥Î SQL ±b¸¹±K½XÅçÃÒ
-```json
-"Server=.;Database=LocalSupplyDB;User Id=your_username;Password=your_password;TrustServerCertificate=True;"
-```
-
----
-
-## ??? ¨BÆJ¥|¡G«Ø¸m±M®×
-
-### ¨Ï¥Î Visual Studio
-1. ¶}±Ò `ResourceSharingPlatform.sln`
-2. «ö `Ctrl + Shift + B` «Ø¸m¤è®×
-3. ÀË¬d¡u¿é¥X¡vµøµ¡¡A½T»{«Ø¸m¦¨¥\
-
-### ¨Ï¥Î©R¥O¦C
 ```powershell
-cd C:\Users\YJ\source\repos\ResourceSharingPlatform\ResourceSharingPlatform
-dotnet build
+dotnet restore .\ResourceSharingPlatform\ResourceSharingPlatform.csproj
+dotnet build .\ResourceSharingPlatform\ResourceSharingPlatform.csproj -c Release --no-restore
 ```
 
-### ¹w´Áµ²ªG
-```
-«Ø¸m¦¨¥\¡C
-    0 ­ÓÄµ§i
-    0 ­Ó¿ù»~
-```
+## å»ºç«‹å…¨æ–°è³‡æ–™åº«
 
----
-
-## ?? ¨BÆJ¤­¡G°õ¦æ±M®×
-
-### ¤èªk 1¡G¨Ï¥Î Visual Studio¡]±ÀÂË¡^
-1. «ö `F5` ©ÎÂIÀ»¡u¶}©l°»¿ù¡v«ö¶s
-2. ÂsÄı¾¹·|¦Û°Ê¶}±Ò
-3. ¹w³]­º­¶¡G`https://localhost:xxxx/Dashboard`
-
-### ¤èªk 2¡G¨Ï¥Î©R¥O¦C
 ```powershell
-cd C:\Users\YJ\source\repos\ResourceSharingPlatform\ResourceSharingPlatform
-dotnet run
+sqlcmd -S . -E -i .\ResourceSharingPlatform\Database\CreateDatabase.sql -b
 ```
 
-µM«á¦bÂsÄı¾¹¶}±ÒÅã¥Üªº URL¡]³q±`¬O `https://localhost:5001` ©Î `http://localhost:5000`¡^
+é è¨­è³‡æ–™åº«åç¨±ç‚º `LocalSupplyDB`ã€‚è‹¥ SQL Server ä¸åœ¨æœ¬æ©Ÿï¼Œè«‹èª¿æ•´ `appsettings.json` çš„ `DefaultConnection`ï¼Œä¸¦ä»¥å°æ‡‰ä¼ºæœå™¨åŸ·è¡Œ SQLã€‚
 
----
+## èˆŠç‰ˆè³‡æ–™åº«å‡ç´š
 
-## ? ¨BÆJ¤»¡GÅç¦¬´ú¸Õ
+æ‡‰ç”¨ç¨‹å¼å•Ÿå‹•æ™‚æœƒä»¥ idempotent SQLï¼š
 
-### 6.1 ¾Ô±¡Á`Äı­¶­±
-- [ ] ³X°İ­º­¶ `/Dashboard`
-- [ ] ½T»{Åã¥Ü 6 ­Ó²Î­p¥d¤ù
-- [ ] ½T»{Åã¥Ü¦U¾ÚÂI²Î­pªí¡]3 ­Ó¾ÚÂI¡^
-- [ ] ½T»{§C®w¦s»P§Y´Áª«¸ê¦Cªí
+- è£œå»ºç‰©è³‡å®šç¾©ã€è¦æ ¼ã€æ“šé»å®‰å…¨åº«å­˜è³‡æ–™è¡¨ã€‚
+- è£œä¸Š `SupplyItem.InventoryItemVariantId`ã€‚
+- ç¬¬ä¸€æ¬¡å°‡èˆŠ `InventoryTypeSetting` è³‡æ–™é·ç§»åˆ°æ–°çµæ§‹ã€‚
 
-### 6.2 ¾ÚÂIºŞ²z
-- [ ] ³X°İ `/SupplyLocation`
-- [ ] ½T»{Åã¥Ü 3 ­Ó¾ÚÂI
-- [ ] ´ú¸Õ·s¼W¾ÚÂI
-- [ ] ´ú¸Õ½s¿è¾ÚÂI
-- [ ] ´ú¸Õ¬d¬İ¸Ô²Ó¸ê®Æ
-- [ ] ´ú¸Õ§R°£¾ÚÂI¡]³n§R°£¡^
+æ­£å¼ç’°å¢ƒå‡ç´šå‰ä»å¿…é ˆå…ˆå®Œæ•´å‚™ä»½è³‡æ–™åº«ã€‚
 
-### 6.3 ª«¸êºŞ²z
-- [ ] ³X°İ `/SupplyItem`
-- [ ] ½T»{Åã¥Ü 5 µ§ª«¸ê
-- [ ] ´ú¸Õ¨Ì¾ÚÂI¿z¿ï
-- [ ] ´ú¸Õ¨ÌºØÃş¿z¿ï
-- [ ] ´ú¸Õ·s¼Wª«¸ê
-- [ ] ´ú¸Õ½s¿èª«¸ê
-- [ ] ½T»{ª¬ºAÅã¥Ü¥¿½T¡]¥¿±`/§C®w¦s/§Y´Á/¹L´Á¡^
+## ç™¼å¸ƒæ‰“åŒ…
 
-### 6.4 ª«¸êÂà²¾
-- [ ] ³X°İ `/SupplyTransfer/Create`
-- [ ] ¿ï¾Üª«¸ê¡B¨Ó·½¾ÚÂI¡B¥Ø¼Ğ¾ÚÂI
-- [ ] ¿é¤JÂà²¾¼Æ¶q
-- [ ] ½T»{Âà²¾¦¨¥\
-- [ ] ÀË¬d¨Ó·½¼Æ¶q´î¤Ö
-- [ ] ÀË¬d¥Ø¼Ğ¼Æ¶q¼W¥[
-- [ ] ¦bÂà²¾¬ö¿ı¤¤½T»{¦³·s¬ö¿ı
-
-### 6.5 Âà²¾¬ö¿ı
-- [ ] ³X°İ `/SupplyTransfer`
-- [ ] ½T»{Åã¥ÜÂà²¾¬ö¿ı
-- [ ] ½T»{Åã¥Ü§¹¾ã¸ê°T¡]®É¶¡¡Bª«¸ê¡B¨Ó·½¡B¥Ø¼Ğ¡B¼Æ¶q¡B¾Ş§@¤H­û¡^
-
-### 6.6 ¦a¹ÏÁ`Äı
-- [ ] ³X°İ `/Map`
-- [ ] ½T»{¦a¹Ï¥¿±`¸ü¤J¡]OpenStreetMap¡^
-- [ ] ½T»{Åã¥Ü 3 ­Ó¾ÚÂI¼Ğ°O
-- [ ] ÂIÀ»¼Ğ°O½T»{¼u¥Xµøµ¡Åã¥Ü¾ÚÂI¸ê°T
-- [ ] ÂIÀ»¡u¬d¬İª«¸ê©ú²Ó¡v³sµ²¥¿±`¸õÂà
-
----
-
-## ?? ±`¨£°İÃD±Æ°£
-
-### °İÃD 1¡GµLªk³s½u¨ì¸ê®Æ®w
-**¿ù»~°T®§**¡G`A network-related or instance-specific error occurred`
-
-**¸Ñ¨M¤èªk**¡G
-1. ½T»{ SQL Server ªA°È¥¿¦b°õ¦æ
-2. ÀË¬d³s½u¦r¦ê¤¤ªº¦øªA¾¹¦WºÙ
-3. ½T»{ SQL Server ¤¹³\ TCP/IP ³s½u
-4. ¹Á¸Õ¦b SSMS ¤¤¤â°Ê³s½u´ú¸Õ
-
-### °İÃD 2¡G¸ê®Æ®w¤£¦s¦b
-**¿ù»~°T®§**¡G`Cannot open database "LocalSupplyDB"`
-
-**¸Ñ¨M¤èªk**¡G
-°õ¦æ `Database\CreateDatabase.sql` «Ø¥ß¸ê®Æ®w
-
-### °İÃD 3¡G¸ê®Æªí¤£¦s¦b
-**¿ù»~°T®§**¡G`Invalid object name 'SupplyLocation'`
-
-**¸Ñ¨M¤èªk**¡G
-½T»{¤w°õ¦æ `CreateDatabase.sql` ¤¤ªº©Ò¦³«Øªí»y¥y
-
-### °İÃD 4¡GNuGet ®M¥ó¥¼¦w¸Ë
-**¿ù»~°T®§**¡G`The type or namespace name 'EntityFrameworkCore' could not be found`
-
-**¸Ñ¨M¤èªk**¡G
 ```powershell
-dotnet restore
+dotnet publish .\ResourceSharingPlatform\ResourceSharingPlatform.csproj `
+  -c Release `
+  -o .\publish `
+  --no-restore
 ```
 
-### °İÃD 5¡G³s±µ°ğ½Ä¬ğ
-**¿ù»~°T®§**¡G`Unable to bind to https://localhost:5001`
+ç™¼å¸ƒåŒ…è‡³å°‘åŒ…å«ï¼š
 
-**¸Ñ¨M¤èªk**¡G
-­×§ï `Properties\launchSettings.json` ¤¤ªº³s±µ°ğ¸¹½X
+- æ‡‰ç”¨ç¨‹å¼ DLLã€runtimeconfig èˆ‡ deps æª”
+- `Views` ç·¨è­¯ç”¢ç‰©
+- `wwwroot`
+- `appsettings.json`
+- `Database/CreateDatabase.sql`
+- æœ¬æ“ä½œæ–‡ä»¶
 
-### °İÃD 6¡G¦a¹ÏµLªkÅã¥Ü
-**¥i¯à­ì¦]**¡Gºô¸ô°İÃDµLªk¸ü¤J Leaflet.js ©Î OpenStreetMap
+## æ‰“åŒ…å‰è³‡æ–™å‚™ä»½
 
-**¸Ñ¨M¤èªk**¡G
-1. ÀË¬dºô¸ô³s½u
-2. ÀË¬dÂsÄı¾¹¥D±±¥x¬O§_¦³ JavaScript ¿ù»~
-3. ½T»{¨¾¤õÀğ¥¼«ÊÂê¥~³¡ CDN
-
----
-
-## ?? ¸ê®Æ®w³s½u´ú¸Õ
-
-### ´ú¸Õ³s½u¸}¥»
-¦b±M®×®Ú¥Ø¿ı«Ø¥ß `TestConnection.sql`¡G
-
-```sql
--- ´ú¸Õ³s½u
-SELECT 
-    'Connection Successful!' AS Message,
-    @@VERSION AS SQLVersion,
-    DB_NAME() AS CurrentDatabase;
-
--- ÀË¬d¸ê®Æªí
-SELECT 
-    TABLE_NAME,
-    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = t.TABLE_NAME) AS ColumnCount
-FROM INFORMATION_SCHEMA.TABLES t
-WHERE TABLE_TYPE = 'BASE TABLE'
-ORDER BY TABLE_NAME;
-
--- ÀË¬d¸ê®Æµ§¼Æ
-SELECT 'SupplyLocation' AS TableName, COUNT(*) AS RecordCount FROM SupplyLocation
-UNION ALL
-SELECT 'SupplyItem', COUNT(*) FROM SupplyItem
-UNION ALL
-SELECT 'SupplyTransferLog', COUNT(*) FROM SupplyTransferLog
-UNION ALL
-SELECT 'UserAccount', COUNT(*) FROM UserAccount;
+```text
+LocalSupplyDB
+ResourceSharingPlatform/wwwroot/uploads/items
+ResourceSharingPlatform/wwwroot/uploads/ai-stockin
 ```
 
----
+åœ–ç‰‡ä¸åœ¨ SQL Server å…§ï¼Œä¸èƒ½åªå‚™ä»½è³‡æ–™åº«ã€‚
 
-## ?? ¶}µo¼Ò¦¡³]©w
+## åˆæ¬¡ä½¿ç”¨é †åº
 
-### ±Ò¥Î¸Ô²Ó¿ù»~°T®§
-¦b `Program.cs` ¤¤¡A¶}µoÀô¹Ò¤U·|¦Û°Ê±Ò¥Î¸Ô²Ó¿ù»~¡G
+1. ä½¿ç”¨ç®¡ç†å“¡ç™»å…¥ã€‚
+2. å»ºç«‹æ“šé»ã€‚
+3. åˆ°ã€Œç³»çµ±ç®¡ç† â†’ åº«å­˜ç¨®é¡è¨­å®šã€å»ºç«‹ç‰©è³‡å®šç¾©ã€‚
+4. è¨­å®šè¦æ ¼ã€‚
+5. è¨­å®šå„æ“šé»å®‰å…¨åº«å­˜ã€‚
+6. åˆ°ã€Œç‰©è³‡ç®¡ç† â†’ æ–°å¢ç‰©è³‡ã€é¸æ“‡æ¨™æº–ç‰©è³‡èˆ‡è¦æ ¼ã€‚
+7. æª¢æŸ¥ Dashboard çš„æ“šé»ä½åº«å­˜èˆ‡å…¨ç³»çµ±ç¸½é‡ä¸è¶³ã€‚
 
-```csharp
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-```
+## é©—æ”¶æ¸…å–®
 
-### ¬d¬İ EF Core °õ¦æªº SQL
-¦b `appsettings.Development.json` ¤¤¥[¤J¡G
+- [ ] ç™»å…¥èˆ‡è§’è‰²æ¬Šé™æ­£ç¢º
+- [ ] æ“šé»èˆ‡åœ°åœ–æ­£å¸¸
+- [ ] ç‰©è³‡å®šç¾©ã€è¦æ ¼èˆ‡æ“šé»é–€æª»å¯ç¶­è­·
+- [ ] æ–°å¢ç‰©è³‡åªèƒ½é¸æ“‡å•Ÿç”¨ä¸­çš„æ¨™æº–è¦æ ¼
+- [ ] ç›¸åŒç‰©è³‡ä¸åŒè¦æ ¼æœƒåˆè¨ˆåˆ¤æ–·å®‰å…¨åº«å­˜
+- [ ] å…¨ç³»çµ±ç›®å‰æ•¸é‡ä¸å«èª¿æ’¥ä¸­æ•¸é‡
+- [ ] èª¿æ’¥ã€å‡ºåº«ã€æè´ˆèˆ‡å ±å»¢æ­£ç¢ºå¢æ¸›åº«å­˜
+- [ ] å³æœŸèˆ‡éæœŸåˆ¤æ–·æ­£ç¢º
+- [ ] Excel å¯ä¸‹è¼‰
+- [ ] åœ–ç‰‡åœ¨é‡æ–°éƒ¨ç½²å¾Œä»å­˜åœ¨
 
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning",
-      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
-    }
-  }
-}
-```
+## æ­£å¼ç’°å¢ƒå®‰å…¨äº‹é …
 
----
-
-## ?? ÂsÄı¾¹´ú¸Õ«ØÄ³
-
-«ØÄ³¨Ï¥Î¥H¤UÂsÄı¾¹´ú¸Õ¡G
-- Google Chrome¡]±ÀÂË¡^
-- Microsoft Edge
-- Firefox
-
----
-
-## ?? §Ö³t±Ò°ÊÀË¬d²M³æ
-
-°õ¦æ«e§Ö³t½T»{¡G
-- [ ] SQL Server ªA°È¥¿¦b°õ¦æ
-- [ ] ¸ê®Æ®w `LocalSupplyDB` ¤w«Ø¥ß
-- [ ] ´ú¸Õ¸ê®Æ¤w¸ü¤J
-- [ ] NuGet ®M¥ó¤wÁÙ­ì
-- [ ] ±M®×¥i¥H¦¨¥\«Ø¸m
-- [ ] ³s½u¦r¦ê³]©w¥¿½T
-
-¥ş³¡¥´¤Ä«á§Y¥i°õ¦æ `F5` ±Ò°Ê±M®×¡I
-
----
-
-## ?? ¨ú±o¨ó§U
-
-¦pªG¹J¨ì°İÃD¡G
-1. ÀË¬d¡u¿é¥X¡vµøµ¡ªº¿ù»~°T®§
-2. ÀË¬dÂsÄı¾¹¶}µoªÌ¤u¨ãªº¥D±±¥x
-3. ÀË¬d¸ê®Æ®w³s½u¬O§_¥¿±`
-4. °Ñ¦Ò¥»¤å¥óªº¡u±`¨£°İÃD±Æ°£¡v³¹¸`
-
----
-
-## ?? ¦¨¥\±Ò°Ê«á
-
-³X°İ¥H¤U URL ¶}©l¨Ï¥Î¡G
-- ¾Ô±¡Á`Äı¡G`https://localhost:xxxx/Dashboard`
-- ¾ÚÂIºŞ²z¡G`https://localhost:xxxx/SupplyLocation`
-- ª«¸êºŞ²z¡G`https://localhost:xxxx/SupplyItem`
-- ª«¸êÂà²¾¡G`https://localhost:xxxx/SupplyTransfer/Create`
-- Âà²¾¬ö¿ı¡G`https://localhost:xxxx/SupplyTransfer`
-- ¦a¹ÏÁ`Äı¡G`https://localhost:xxxx/Map`
-
-¨É¨ü¨Ï¥Î¡I??
+- ä¸å¯ä¿ç•™é è¨­ç®¡ç†å“¡å¯†ç¢¼ã€‚
+- é€£ç·šå­—ä¸²èˆ‡ API Key æ‡‰ä½¿ç”¨ç’°å¢ƒè®Šæ•¸æˆ– Secret Storeã€‚
+- `ChannelAccessToken`ã€`ChannelSecret`ã€`ApiKey` ä¸æ‡‰ä»¥æ­£å¼æ˜æ–‡å€¼æ”¾å…¥ç™¼å¸ƒåŒ…ã€‚
+- æ­£å¼ç«™æ‡‰ä½¿ç”¨ HTTPSã€‚
+- uploads ç›®éŒ„éœ€é™åˆ¶å¯åŸ·è¡Œæª”æ¡ˆä¸¦å®šæœŸæƒæèˆ‡å‚™ä»½ã€‚

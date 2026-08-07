@@ -27,6 +27,9 @@ namespace ResourceSharingPlatform.Controllers
         public async Task<IActionResult> Index(int? locationId, string? category, string? stockType, string? keyword)
         {
             var items = await GetFilteredItemsAsync(locationId, category, stockType, keyword);
+            var aggregateStatus = await GetAggregateLocationStockStatusAsync();
+            ViewBag.LowStockItemIds = aggregateStatus.LowStockItemIds;
+            ViewBag.LocationSafetyByItemId = aggregateStatus.SafetyByItemId;
 
             // For filter dropdowns
             ViewBag.Locations = new SelectList(
@@ -55,7 +58,7 @@ namespace ResourceSharingPlatform.Controllers
                     LocationCount = g.Select(x => x.LocationId).Distinct().Count(),
                     TotalQuantity = g.Sum(x => x.Quantity),
                     Unit = g.First().Unit,
-                    HasLowStock = g.Any(x => x.Quantity <= x.SafetyStock),
+                    HasLowStock = g.Any(x => aggregateStatus.LowStockItemIds.Contains(x.Id)),
                     NearestExpirationDate = g.Where(x => x.ExpirationDate.HasValue).Select(x => x.ExpirationDate).OrderBy(d => d).FirstOrDefault()
                 })
                 .OrderBy(x => x.NearestExpirationDate.HasValue ? 0 : 1)
@@ -128,6 +131,38 @@ namespace ResourceSharingPlatform.Controllers
                 .ToList();
         }
 
+        private async Task<(HashSet<int> LowStockItemIds, Dictionary<int, int> SafetyByItemId)> GetAggregateLocationStockStatusAsync()
+        {
+            var items = await _context.SupplyItems.Where(x => x.IsActive).ToListAsync();
+            var definitions = await _context.InventoryItemDefinitions.Where(x => x.IsActive).ToListAsync();
+            var variants = await _context.InventoryItemVariants.Where(x => x.IsActive).ToListAsync();
+            var settings = await _context.LocationInventorySafetyStocks.ToListAsync();
+
+            var definitionsById = definitions.ToDictionary(x => x.Id);
+            var byVariant = variants.Where(x => definitionsById.ContainsKey(x.InventoryItemDefinitionId))
+                .ToDictionary(x => x.Id, x => x.InventoryItemDefinitionId);
+            var byName = definitions.GroupBy(x => (x.Category, x.ItemName))
+                .ToDictionary(x => x.Key, x => x.First().Id);
+
+            int? Resolve(SupplyItem item)
+            {
+                if (item.InventoryItemVariantId.HasValue && byVariant.TryGetValue(item.InventoryItemVariantId.Value, out var id)) return id;
+                return byName.TryGetValue((item.Category, item.ItemName), out var nameId) ? nameId : null;
+            }
+
+            var resolved = items.Select(x => new { Item = x, DefinitionId = Resolve(x) }).Where(x => x.DefinitionId.HasValue).ToList();
+            var totals = resolved.GroupBy(x => (x.Item.LocationId, x.DefinitionId!.Value))
+                .ToDictionary(x => x.Key, x => x.Sum(y => y.Item.Quantity));
+            var safetyByGroup = settings.ToDictionary(x => (x.LocationId, x.InventoryItemDefinitionId), x => x.SafetyStock);
+            var lowGroups = safetyByGroup.Where(x => x.Value > 0 && totals.GetValueOrDefault(x.Key) <= x.Value)
+                .Select(x => x.Key).ToHashSet();
+
+            return (
+                resolved.Where(x => lowGroups.Contains((x.Item.LocationId, x.DefinitionId!.Value))).Select(x => x.Item.Id).ToHashSet(),
+                resolved.ToDictionary(x => x.Item.Id, x => safetyByGroup.GetValueOrDefault((x.Item.LocationId, x.DefinitionId!.Value)))
+            );
+        }
+
         // GET: SupplyItem/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -152,11 +187,7 @@ namespace ResourceSharingPlatform.Controllers
         [Authorize(Roles = Roles.AdminAndCadre)]
         public async Task<IActionResult> Create()
         {
-            ViewBag.Locations = new SelectList(
-                await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
-                "Id",
-                "LocationName"
-            );
+            await PopulateCreateOptionsAsync();
             return View();
         }
 
@@ -166,8 +197,41 @@ namespace ResourceSharingPlatform.Controllers
         [Authorize(Roles = Roles.AdminAndCadre)]
         public async Task<IActionResult> Create(
             [Bind("Category,ItemName,Specification,Quantity,Unit,StockType,ExpirationDate,LocationId,SafetyStock,Remark")] SupplyItem item,
+            int? inventoryItemVariantId,
             IFormFile? imageFile)
         {
+            InventoryItemVariant? inventoryItemVariant = null;
+            if (inventoryItemVariantId.HasValue)
+            {
+                inventoryItemVariant = await _context.InventoryItemVariants
+                    .Include(x => x.InventoryItemDefinition)
+                    .FirstOrDefaultAsync(x => x.Id == inventoryItemVariantId.Value && x.IsActive && x.InventoryItemDefinition!.IsActive);
+            }
+
+            if (inventoryItemVariant?.InventoryItemDefinition == null)
+            {
+                ModelState.AddModelError(nameof(inventoryItemVariantId), "請選擇有效的物資與規格。");
+            }
+            else
+            {
+                var definition = inventoryItemVariant.InventoryItemDefinition;
+                item.InventoryItemVariantId = inventoryItemVariant.Id;
+                item.Category = definition.Category;
+                item.ItemName = definition.ItemName;
+                item.Specification = inventoryItemVariant.Specification;
+                item.Unit = definition.Unit;
+                item.SafetyStock = await _context.LocationInventorySafetyStocks
+                    .Where(x => x.LocationId == item.LocationId && x.InventoryItemDefinitionId == definition.Id)
+                    .Select(x => (int?)x.SafetyStock)
+                    .FirstOrDefaultAsync() ?? 0;
+
+                ModelState.Remove(nameof(item.Category));
+                ModelState.Remove(nameof(item.ItemName));
+                ModelState.Remove(nameof(item.Specification));
+                ModelState.Remove(nameof(item.Unit));
+                ModelState.Remove(nameof(item.SafetyStock));
+            }
+
             if (item.StockType == StockTypes.HasExpiry || item.StockType == StockTypes.Frozen)
             {
                 if (item.ExpirationDate == null)
@@ -199,6 +263,9 @@ namespace ResourceSharingPlatform.Controllers
                 if (existingMatch != null)
                 {
                     existingMatch.Quantity += item.Quantity;
+                    existingMatch.InventoryItemVariantId = item.InventoryItemVariantId;
+                    existingMatch.Unit = item.Unit;
+                    existingMatch.SafetyStock = item.SafetyStock;
                     existingMatch.UpdatedAt = DateTime.Now;
 
                     if (imageFile != null && imageFile.Length > 0 && string.IsNullOrEmpty(existingMatch.ImagePath))
@@ -224,13 +291,27 @@ namespace ResourceSharingPlatform.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            await PopulateCreateOptionsAsync(item.LocationId, inventoryItemVariantId);
+            return View(item);
+        }
+
+        private async Task PopulateCreateOptionsAsync(int? locationId = null, int? inventoryItemVariantId = null)
+        {
             ViewBag.Locations = new SelectList(
                 await _context.SupplyLocations.Where(x => x.IsActive).ToListAsync(),
                 "Id",
                 "LocationName",
-                item.LocationId
+                locationId
             );
-            return View(item);
+            ViewBag.InventoryItemVariants = await _context.InventoryItemVariants
+                .Include(x => x.InventoryItemDefinition)
+                .Where(x => x.IsActive && x.InventoryItemDefinition!.IsActive)
+                .OrderBy(x => x.InventoryItemDefinition!.Category)
+                .ThenBy(x => x.InventoryItemDefinition!.ItemName)
+                .ThenBy(x => x.Specification)
+                .ToListAsync();
+            ViewBag.LocationSafetyStocks = await _context.LocationInventorySafetyStocks.ToListAsync();
+            ViewBag.SelectedInventoryItemVariantId = inventoryItemVariantId;
         }
 
         // GET: SupplyItem/Edit/5

@@ -1,8 +1,18 @@
 @model ResourceSharingPlatform.Models.SupplyItem
 @using ResourceSharingPlatform.Models
+@using System.Text.Json
 
 @{
     ViewData["Title"] = "新增物資";
+    var inventoryItemVariants = ViewBag.InventoryItemVariants as List<InventoryItemVariant> ?? new();
+    var locationSafetyStocks = ViewBag.LocationSafetyStocks as List<LocationInventorySafetyStock> ?? new();
+    int? selectedInventoryItemVariantId = ViewBag.SelectedInventoryItemVariantId;
+    var locationSafetyJson = JsonSerializer.Serialize(locationSafetyStocks.Select(x => new
+    {
+        x.LocationId,
+        x.InventoryItemDefinitionId,
+        x.SafetyStock
+    }));
 }
 
 <div class="container mt-4">
@@ -29,25 +39,45 @@
                         </div>
 
                         <h6 class="text-muted text-uppercase mt-4">基本資料</h6>
+                        <div class="mb-3">
+                            <label for="inventoryItemVariantId" class="form-label">庫存種類與規格 <span class="text-danger">*</span></label>
+                            <select id="inventoryItemVariantId" name="inventoryItemVariantId" class="form-select" required>
+                                <option value="">請選擇預設物資與規格</option>
+                                @foreach (var variant in inventoryItemVariants)
+                                {
+                                    var definition = variant.InventoryItemDefinition!;
+                                    <option value="@variant.Id"
+                                            data-definition-id="@definition.Id"
+                                            data-category="@definition.Category"
+                                            data-item-name="@definition.ItemName"
+                                            data-specification="@variant.Specification"
+                                            data-unit="@definition.Unit"
+                                            selected="@(selectedInventoryItemVariantId == variant.Id ? "selected" : null)">
+                                        @definition.DisplayName｜@variant.DisplayName
+                                    </option>
+                                }
+                            </select>
+                            <span class="text-danger field-validation-valid" data-valmsg-for="inventoryItemVariantId" data-valmsg-replace="true"></span>
+                            <div class="form-text">選擇後會自動帶入物資種類、名稱、規格與最小單位。</div>
+                            @if (!inventoryItemVariants.Any())
+                            {
+                                <div class="alert alert-warning mt-2 mb-0">
+                                    尚未建立可用的庫存種類設定，請聯絡管理員先至「系統管理 → 庫存種類設定」建立資料。
+                                </div>
+                            }
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label asp-for="Category" class="form-label">物資種類 <span class="text-danger">*</span></label>
-                                    <input asp-for="Category" class="form-control" placeholder="例如：食品、醫療、防護" list="categoryList" />
-                                    <datalist id="categoryList">
-                                        <option value="食品"></option>
-                                        <option value="醫療"></option>
-                                        <option value="防護"></option>
-                                        <option value="生活"></option>
-                                        <option value="工具"></option>
-                                    </datalist>
+                                    <input asp-for="Category" class="form-control" readonly />
                                     <span asp-validation-for="Category" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label asp-for="ItemName" class="form-label">物資名稱 <span class="text-danger">*</span></label>
-                                    <input asp-for="ItemName" class="form-control" placeholder="例如：飲用水" />
+                                    <input asp-for="ItemName" class="form-control" readonly />
                                     <span asp-validation-for="ItemName" class="text-danger"></span>
                                 </div>
                             </div>
@@ -55,7 +85,7 @@
 
                         <div class="mb-3">
                             <label asp-for="Specification" class="form-label">規格</label>
-                            <input asp-for="Specification" class="form-control" placeholder="例如：500ml、大／中／小" />
+                            <input asp-for="Specification" class="form-control" readonly />
                             <span asp-validation-for="Specification" class="text-danger"></span>
                         </div>
 
@@ -71,29 +101,13 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label asp-for="Unit" class="form-label">單位</label>
-                                    <input asp-for="Unit" class="form-control" placeholder="例如：瓶、箱、組、件" list="unitList" />
-                                    <datalist id="unitList">
-                                        <option value="瓶"></option>
-                                        <option value="箱"></option>
-                                        <option value="組"></option>
-                                        <option value="件"></option>
-                                        <option value="片"></option>
-                                        <option value="包"></option>
-                                    </datalist>
+                                    <input asp-for="Unit" class="form-control" readonly />
                                     <span asp-validation-for="Unit" class="text-danger"></span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6" id="expirationWrap">
-                                <div class="mb-3">
-                                    <label asp-for="ExpirationDate" class="form-label">有效期限</label>
-                                    <input asp-for="ExpirationDate" class="form-control" type="date" />
-                                    <span asp-validation-for="ExpirationDate" class="text-danger"></span>
-                                    <small class="text-muted">無效期物資不需填寫</small>
-                                </div>
-                            </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label asp-for="LocationId" class="form-label">所在據點 <span class="text-danger">*</span></label>
@@ -103,13 +117,21 @@
                                     <span asp-validation-for="LocationId" class="text-danger"></span>
                                 </div>
                             </div>
+                            <div class="col-md-6" id="expirationWrap">
+                                <div class="mb-3">
+                                    <label asp-for="ExpirationDate" class="form-label">有效期限</label>
+                                    <input asp-for="ExpirationDate" class="form-control" type="date" />
+                                    <span asp-validation-for="ExpirationDate" class="text-danger"></span>
+                                    <small class="text-muted">無效期物資不需填寫</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="SafetyStock" class="form-label">安全庫存 <span class="text-danger">*</span></label>
-                            <input asp-for="SafetyStock" class="form-control" type="number" min="0" />
+                            <label asp-for="SafetyStock" class="form-label">所在據點安全庫存</label>
+                            <input asp-for="SafetyStock" class="form-control" type="number" min="0" readonly />
                             <span asp-validation-for="SafetyStock" class="text-danger"></span>
-                            <small class="text-muted">當數量低於此值時會顯示警告</small>
+                            <small class="text-muted">由據點門檻設定帶入；相同物資的所有規格會合併計算。</small>
                         </div>
 
                         <h6 class="text-muted text-uppercase mt-4">圖片</h6>
@@ -158,6 +180,28 @@
         (function () {
             var wrap = document.getElementById('expirationWrap');
             var input = document.getElementById('ExpirationDate');
+            var presetSelect = document.getElementById('inventoryItemVariantId');
+            var locationSelect = document.getElementById('LocationId');
+            var locationSafetyStocks = @Html.Raw(locationSafetyJson);
+
+            function applyLocationSafety() {
+                var option = presetSelect.options[presetSelect.selectedIndex];
+                var definitionId = Number(option.dataset.definitionId || 0);
+                var locationId = Number(locationSelect.value || 0);
+                var setting = locationSafetyStocks.find(function (x) {
+                    return x.LocationId === locationId && x.InventoryItemDefinitionId === definitionId;
+                });
+                document.getElementById('SafetyStock').value = setting ? setting.SafetyStock : 0;
+            }
+
+            function applyPreset() {
+                var option = presetSelect.options[presetSelect.selectedIndex];
+                document.getElementById('Category').value = option.dataset.category || '';
+                document.getElementById('ItemName').value = option.dataset.itemName || '';
+                document.getElementById('Specification').value = option.dataset.specification || '';
+                document.getElementById('Unit').value = option.dataset.unit || '';
+                applyLocationSafety();
+            }
 
             function update() {
                 var checked = document.querySelector('input[name="StockType"]:checked');
@@ -174,6 +218,11 @@
             document.querySelectorAll('input[name="StockType"]').forEach(function (r) {
                 r.addEventListener('change', update);
             });
+            presetSelect.addEventListener('change', applyPreset);
+            locationSelect.addEventListener('change', applyLocationSafety);
+            if (presetSelect.value) {
+                applyPreset();
+            }
             update();
         })();
     </script>

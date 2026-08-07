@@ -1,0 +1,21 @@
+@model ResourceSharingPlatform.Models.InventoryItemDefinition
+@{ ViewData["Title"] = "規格設定"; }
+<div class="container mt-4">
+    <h2><i class="bi bi-list-check"></i> 規格設定</h2>
+    <p class="text-muted">@Model.DisplayName（最小單位：@Model.Unit）</p>
+    <div class="card shadow-sm mb-4"><div class="card-body">
+        <form asp-action="AddVariant" asp-route-id="@Model.Id" method="post" class="row g-2">
+            <div class="col-md-9"><input name="specification" class="form-control" placeholder="輸入新規格；無規格可留空" maxlength="200" /></div>
+            <div class="col-md-3"><button class="btn btn-primary"><i class="bi bi-plus-circle"></i> 新增規格</button></div>
+        </form>
+    </div></div>
+    <div class="card shadow-sm"><div class="card-body">
+        <table class="table table-hover align-middle"><thead><tr><th>規格</th><th>狀態</th><th>操作</th></tr></thead><tbody>
+        @foreach (var variant in Model.Variants.OrderByDescending(x => x.IsActive).ThenBy(x => x.Specification))
+        { <tr><td>@variant.DisplayName</td><td>@(variant.IsActive ? "啟用" : "停用")</td><td>
+            @if (variant.IsActive) { <form asp-action="DisableVariant" asp-route-id="@variant.Id" method="post"><button class="btn btn-sm btn-outline-danger">停用</button></form> }
+        </td></tr> }
+        </tbody></table>
+        <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+    </div></div>
+</div>

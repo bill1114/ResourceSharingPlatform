@@ -1,0 +1,19 @@
+@model ResourceSharingPlatform.Models.ViewModels.InventoryDefinitionFormViewModel
+@{ ViewData["Title"] = "新增庫存種類"; }
+
+<div class="container mt-4">
+    <h2><i class="bi bi-plus-square"></i> 新增庫存種類</h2><hr />
+    <div class="card shadow-sm"><div class="card-body">
+        <form asp-action="Create" method="post">
+            <partial name="_Form" model="Model" />
+            <div class="mb-3">
+                <label asp-for="InitialSpecification" class="form-label">第一個規格</label>
+                <input asp-for="InitialSpecification" class="form-control" placeholder="例如：600ml、XL；無規格可留空" />
+                <span asp-validation-for="InitialSpecification" class="text-danger"></span>
+            </div>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-check-circle"></i> 儲存並設定據點門檻</button>
+            <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+        </form>
+    </div></div>
+</div>
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

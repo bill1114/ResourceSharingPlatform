@@ -20,6 +20,10 @@ namespace ResourceSharingPlatform.Data
         public DbSet<SupplyDisposalLog> SupplyDisposalLogs { get; set; }
         public DbSet<AIStockInSettings> AIStockInSettings { get; set; }
         public DbSet<AIStockInLog> AIStockInLogs { get; set; }
+        public DbSet<InventoryTypeSetting> InventoryTypeSettings { get; set; }
+        public DbSet<InventoryItemDefinition> InventoryItemDefinitions { get; set; }
+        public DbSet<InventoryItemVariant> InventoryItemVariants { get; set; }
+        public DbSet<LocationInventorySafetyStock> LocationInventorySafetyStocks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,6 +40,15 @@ namespace ResourceSharingPlatform.Data
             modelBuilder.Entity<SupplyDisposalLog>().ToTable("SupplyDisposalLog");
             modelBuilder.Entity<AIStockInSettings>().ToTable("AIStockInSettings");
             modelBuilder.Entity<AIStockInLog>().ToTable("AIStockInLog");
+            modelBuilder.Entity<InventoryTypeSetting>().ToTable("InventoryTypeSetting");
+            modelBuilder.Entity<InventoryItemDefinition>().ToTable("InventoryItemDefinition");
+            modelBuilder.Entity<InventoryItemVariant>().ToTable("InventoryItemVariant");
+            modelBuilder.Entity<LocationInventorySafetyStock>().ToTable("LocationInventorySafetyStock");
+
+            modelBuilder.Entity<InventoryTypeSetting>()
+                .HasIndex(x => new { x.Category, x.ItemName, x.Specification })
+                .IsUnique()
+                .HasFilter("[IsActive] = 1");
 
             // Configure relationships
             modelBuilder.Entity<SupplyItem>()
@@ -43,6 +56,50 @@ namespace ResourceSharingPlatform.Data
                 .WithMany(x => x.SupplyItems)
                 .HasForeignKey(x => x.LocationId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SupplyItem>()
+                .HasOne(x => x.InventoryTypeSetting)
+                .WithMany()
+                .HasForeignKey(x => x.InventoryTypeSettingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SupplyItem>()
+                .HasOne(x => x.InventoryItemVariant)
+                .WithMany()
+                .HasForeignKey(x => x.InventoryItemVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InventoryItemDefinition>()
+                .HasIndex(x => new { x.Category, x.ItemName })
+                .IsUnique()
+                .HasFilter("[IsActive] = 1");
+
+            modelBuilder.Entity<InventoryItemVariant>()
+                .HasOne(x => x.InventoryItemDefinition)
+                .WithMany(x => x.Variants)
+                .HasForeignKey(x => x.InventoryItemDefinitionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InventoryItemVariant>()
+                .HasIndex(x => new { x.InventoryItemDefinitionId, x.Specification })
+                .IsUnique()
+                .HasFilter("[IsActive] = 1");
+
+            modelBuilder.Entity<LocationInventorySafetyStock>()
+                .HasOne(x => x.Location)
+                .WithMany()
+                .HasForeignKey(x => x.LocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LocationInventorySafetyStock>()
+                .HasOne(x => x.InventoryItemDefinition)
+                .WithMany(x => x.LocationSafetyStocks)
+                .HasForeignKey(x => x.InventoryItemDefinitionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LocationInventorySafetyStock>()
+                .HasIndex(x => new { x.LocationId, x.InventoryItemDefinitionId })
+                .IsUnique();
 
             modelBuilder.Entity<SupplyTransferLog>()
                 .HasOne(x => x.SupplyItem)

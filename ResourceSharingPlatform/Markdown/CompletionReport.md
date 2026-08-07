@@ -1,450 +1,67 @@
-# ?? ¦a¤èª«¸êºŞ²z¥­¥x - ¶}µo§¹¦¨³ø§i
-
-## ? ±M®×ª¬ºA¡G¶}µo§¹¦¨¡A¥i¥H°õ¦æ´ú¸Õ
-
----
-
-## ?? ±M®×·§ªp
-
-### °ò¥»¸ê°T
-- **±M®×¦WºÙ**¡GResourceSharingPlatform¡]¦a¤èª«¸êºŞ²z¥­¥x¡^
-- **§Ş³N°ïÅ|**¡GASP.NET Core MVC + .NET 8 + Entity Framework Core + SQL Server
-- **«eºİ§Ş³N**¡GBootstrap 5 + Bootstrap Icons + Leaflet.js
-- **¶}µoª¬ºA**¡G? ©Ò¦³µ{¦¡½X¤w§¹¦¨¨Ã³q¹L½sÄ¶
-- **´ú¸Õª¬ºA**¡G? «İ°õ¦æ´ú¸ÕÅçÃÒ
-
----
-
-## ?? ¤w¹ê²{¥\¯à²M³æ
-
-### 1. ¾Ô±¡Á`Äı (Dashboard) ?
-- [x] 6 ­Ó²Î­p«ü¼Ğ¥d¤ù¡]¾ÚÂI¼Æ¡Bª«¸êºØÃş¡BÁ`¼Æ¶q¡B§C®w¦s¡B§Y´Á¡B¤w¹L´Á¡^
-- [x] ¦U¾ÚÂIª«¸ê²Î­pªí
-- [x] §C©óÄµ§Ù¤ô¦ìª«¸ê¦Cªí
-- [x] §Y±N¹L´Áª«¸ê¦Cªí¡]30¤Ñ¤º¡^
-- [x] ¸ê®Æ¦Û°Ê­pºâ»P§ó·s
-
-### 2. ¾ÚÂIºŞ²z (SupplyLocation) ?
-- [x] ¾ÚÂI¦Cªí®i¥Ü
-- [x] ·s¼W¾ÚÂI¡]§t¸g½n«×³]©w¡^
-- [x] ½s¿è¾ÚÂI¸ê®Æ
-- [x] ¬d¬İ¾ÚÂI¸Ô²Ó¸ê®Æ
-- [x] ³n§R°£¾ÚÂI¡]IsActive = false¡^
-- [x] ¾ÚÂI»Pª«¸êÃöÁpÅã¥Ü
-
-### 3. ª«¸êºŞ²z (SupplyItem) ?
-- [x] ª«¸ê¦Cªí®i¥Ü
-- [x] ¨Ì¾ÚÂI¿z¿ï
-- [x] ¨ÌºØÃş¿z¿ï
-- [x] ·s¼Wª«¸ê
-- [x] ½s¿èª«¸ê
-- [x] ¬d¬İª«¸ê¸Ô²Ó¸ê®Æ
-- [x] ³n§R°£ª«¸ê
-- [x] ª¬ºA¦Û°Ê§PÂ_¡]¥¿±`/§C®w¦s/§Y´Á/¹L´Á¡^
-- [x] ª¬ºAÃC¦â°Ï¤ÀÅã¥Ü
-
-### 4. ª«¸êÂà²¾ (SupplyTransfer) ?
-- [x] «Ø¥ßÂà²¾¥\¯à
-- [x] ¨Ó·½¾ÚÂI»P¥Ø¼Ğ¾ÚÂI¿ï¾Ü
-- [x] Âà²¾¼Æ¶q¿é¤J
-- [x] ¨Ó·½¼Æ¶qÅçÃÒ
-- [x] ¦Û°Ê¦©°£¨Ó·½¼Æ¶q
-- [x] ¦Û°Ê¼W¥[¥Ø¼Ğ¼Æ¶q
-- [x] ¥æ©ö§¹¾ã©Ê«OÃÒ¡]Transaction¡^
-- [x] Âà²¾¬ö¿ı«Ø¥ß
-- [x] ¾Ş§@¤H­û»P³Æµù°O¿ı
-
-### 5. Âà²¾¬ö¿ı (Transfer Log) ?
-- [x] Âà²¾¬ö¿ı¦Cªí
-- [x] Åã¥Ü§¹¾ãÂà²¾¸ê°T
-- [x] Åã¥Ü³Ìªñ 100 µ§¬ö¿ı
-- [x] ®É¶¡­Ë§Ç±Æ¦C
-
-### 6. ¦a¹ÏÁ`Äı (Map) ?
-- [x] Leaflet.js ¾ã¦X
-- [x] OpenStreetMap ¹Ï¸ê
-- [x] ¾ÚÂI Marker Åã¥Ü
-- [x] ®Ú¾Úª¬ºAÅÜ´« Marker ÃC¦â
-- [x] Popup Åã¥Ü¾ÚÂIºK­n¸ê°T
-- [x] ³sµ²¦Üª«¸ê©ú²Ó­¶­±
-
----
-
-## ?? ±M®×ÀÉ®×µ²ºc
-
-```
-ResourceSharingPlatform/
-¢u¢w¢w Controllers/           (5 ­Ó±±¨î¾¹)
-¢x   ¢u¢w¢w DashboardController.cs
-¢x   ¢u¢w¢w SupplyLocationController.cs
-¢x   ¢u¢w¢w SupplyItemController.cs
-¢x   ¢u¢w¢w SupplyTransferController.cs
-¢x   ¢|¢w¢w MapController.cs
-¢x
-¢u¢w¢w Models/               (7 ­Ó¼Ò«¬)
-¢x   ¢u¢w¢w SupplyLocation.cs
-¢x   ¢u¢w¢w SupplyItem.cs
-¢x   ¢u¢w¢w SupplyTransferLog.cs
-¢x   ¢u¢w¢w UserAccount.cs
-¢x   ¢|¢w¢w ViewModels/
-¢x       ¢u¢w¢w DashboardViewModel.cs
-¢x       ¢u¢w¢w MapLocationViewModel.cs
-¢x       ¢|¢w¢w TransferViewModel.cs
-¢x
-¢u¢w¢w Views/                (19 ­Óµø¹Ï)
-¢x   ¢u¢w¢w Shared/
-¢x   ¢x   ¢|¢w¢w _Layout.cshtml
-¢x   ¢u¢w¢w Dashboard/
-¢x   ¢x   ¢|¢w¢w Index.cshtml
-¢x   ¢u¢w¢w Map/
-¢x   ¢x   ¢|¢w¢w Index.cshtml
-¢x   ¢u¢w¢w SupplyLocation/
-¢x   ¢x   ¢u¢w¢w Index.cshtml
-¢x   ¢x   ¢u¢w¢w Create.cshtml
-¢x   ¢x   ¢u¢w¢w Edit.cshtml
-¢x   ¢x   ¢u¢w¢w Details.cshtml
-¢x   ¢x   ¢|¢w¢w Delete.cshtml
-¢x   ¢u¢w¢w SupplyItem/
-¢x   ¢x   ¢u¢w¢w Index.cshtml
-¢x   ¢x   ¢u¢w¢w Create.cshtml
-¢x   ¢x   ¢u¢w¢w Edit.cshtml
-¢x   ¢x   ¢u¢w¢w Details.cshtml
-¢x   ¢x   ¢|¢w¢w Delete.cshtml
-¢x   ¢|¢w¢w SupplyTransfer/
-¢x       ¢u¢w¢w Index.cshtml
-¢x       ¢|¢w¢w Create.cshtml
-¢x
-¢u¢w¢w Services/             (2 ­ÓªA°È)
-¢x   ¢u¢w¢w DashboardService.cs
-¢x   ¢|¢w¢w SupplyTransferService.cs
-¢x
-¢u¢w¢w Data/
-¢x   ¢|¢w¢w ApplicationDbContext.cs
-¢x
-¢u¢w¢w Database/             (2 ­Ó SQL ¸}¥»)
-¢x   ¢u¢w¢w CreateDatabase.sql
-¢x   ¢|¢w¢w InsertTestData.sql
-¢x
-¢u¢w¢w Markdown/             (3 ¥÷¤å¥ó)
-¢x   ¢u¢w¢w ResourceSharingPlatform_dev_spec.md
-¢x   ¢u¢w¢w DevelopmentProgress.md
-¢x   ¢|¢w¢w ExecutionGuide.md
-¢x
-¢u¢w¢w appsettings.json
-¢|¢w¢w Program.cs
-```
-
----
-
-## ??? ¸ê®Æ®w³]­p
-
-### ¸ê®Æªí
-1. **SupplyLocation** - ¾ÚÂI¸ê®Æªí¡]3 µ§´ú¸Õ¸ê®Æ¡^
-2. **SupplyItem** - ª«¸ê¸ê®Æªí¡]5 µ§´ú¸Õ¸ê®Æ¡^
-3. **SupplyTransferLog** - Âà²¾¬ö¿ıªí
-4. **UserAccount** - ¨Ï¥ÎªÌ±b¸¹ªí¡]¹w¯d¡^
-
-### ÃöÁp³]­p
-- SupplyItem ¡÷ SupplyLocation (Many-to-One)
-- SupplyTransferLog ¡÷ SupplyItem (Many-to-One)
-- SupplyTransferLog ¡÷ FromLocation (Many-to-One)
-- SupplyTransferLog ¡÷ ToLocation (Many-to-One)
-
----
-
-## ?? §Ş³N¯S©Ê
-
-### «áºİ§Ş³N
-- ? ASP.NET Core MVC (NET 8)
-- ? Entity Framework Core 8.0
-- ? SQL Server ¸ê®Æ®w
-- ? Repository Pattern¡]³z¹L EF Core¡^
-- ? Service Layer ¬[ºc
-- ? ¥æ©öºŞ²z (Transaction)
-- ? ¨Ì¿àª`¤J (Dependency Injection)
-
-### «eºİ§Ş³N
-- ? Bootstrap 5 ÅTÀ³¦¡³]­p
-- ? Bootstrap Icons ¹Ï¥Ü¨t²Î
-- ? Leaflet.js ¦a¹Ï¥\¯à
-- ? OpenStreetMap ¹Ï¸ê
-- ? Razor Pages ¼ËªO¤ŞÀº
-- ? Ajax «D¦P¨B¸ê®Æ¸ü¤J
-
-### ¸ê®ÆÅçÃÒ
-- ? Model Validation
-- ? Client-side Validation
-- ? Server-side Validation
-- ? °Ó·~ÅŞ¿èÅçÃÒ
-
----
-
-## ?? ¸ê®Æ§¹¾ã©Ê«OÃÒ
-
-### ³n§R°£¾÷¨î
-- ¾ÚÂI»Pª«¸ê¨Ï¥Î `IsActive` Äæ¦ì¼Ğ°O
-- §R°£¾Ş§@¥u³]©w¬°°±¥Î¡A¤£·|¯u¥¿§R°£¸ê®Æ
-- «O¯d§¹¾ã¾ú¥v¬ö¿ı
-
-### ¥æ©ö«OÃÒ
-- ª«¸êÂà²¾¨Ï¥Î `BeginTransaction()`
-- ½T«O¦©°£»P¼W¥[¦P®É¦¨¥\©Î¦P®É¥¢±Ñ
-- µo¥Í¿ù»~¦Û°Ê¦^ºu
-
-### ¥~Áä¬ù§ô
-- ¨Ï¥Î `DeleteBehavior.Restrict` ¨¾¤î»~§R
-- ½T«O¸ê®ÆÃöÁp§¹¾ã©Ê
-
----
-
-## ?? NuGet ®M¥ó¨Ì¿à
-
-```xml
-<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
-```
-
----
-
-## ?? °õ¦æ«e·Ç³Æ
-
-### ¨BÆJ 1¡G«Ø¥ß¸ê®Æ®w
-```sql
--- ¦b SQL Server Management Studio ¤¤°õ¦æ
-1. Database/CreateDatabase.sql
-2. Database/InsertTestData.sql
-```
-
-### ¨BÆJ 2¡G½T»{³s½u¦r¦ê
-ÀË¬d `appsettings.json`¡G
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Server=.;Database=LocalSupplyDB;Trusted_Connection=True;TrustServerCertificate=True;"
-}
-```
-
-### ¨BÆJ 3¡GÁÙ­ì®M¥ó
-```powershell
-dotnet restore
-```
-
-### ¨BÆJ 4¡G«Ø¸m±M®×
-```powershell
-dotnet build
-```
-? **ª¬ºA¡G¤w³q¹L«Ø¸m¡AµL½sÄ¶¿ù»~**
-
-### ¨BÆJ 5¡G°õ¦æ±M®×
-```powershell
-dotnet run
-```
-©Î¦b Visual Studio ¤¤«ö `F5`
-
----
-
-## ?? UI ³]­p¯S¦â
-
-### ÃC¦â¨t²Î
-- **¥¿±`ª¬ºA**¡Gºñ¦â (bg-success)
-- **§C®w¦s**¡G¬õ¦â (bg-danger)
-- **§Y±N¹L´Á**¡G¶À¦â (bg-warning)
-- **¤w¹L´Á**¡G²`¦â (bg-dark)
-- **¥D¦â½Õ**¡GÂÅ¦â (bg-primary)
-
-### ¹Ï¥Ü¨t²Î
-¨Ï¥Î Bootstrap Icons ´£¨Ñª½Ä±ªºµøÄ±´£¥Ü¡G
-- ?? ª«¸ê¡Gbi-box
-- ?? ¾ÚÂI¡Gbi-building
-- ??? ¦a¹Ï¡Gbi-geo-alt
-- ? ¾Ô±¡¡Gbi-speedometer2
-- ?? Âà²¾¡Gbi-arrow-left-right
-
-### ÅTÀ³¦¡³]­p
-- ¨Ï¥Î Bootstrap Grid ¨t²Î
-- ¤ä´©¤â¾÷¡B¥­ªO¡B®à­±Åã¥Ü
-- ¥d¤ù¦¡³]­p©ö©ó¾\Åª
-
----
-
-## ?? ­¶­±¸ô¥Ñ
-
-| ¥\¯à | URL | »¡©ú |
-|------|-----|------|
-| ¾Ô±¡Á`Äı | `/Dashboard` | ­º­¶¡AÅã¥Ü§Y®É²Î­p |
-| ¾ÚÂI¦Cªí | `/SupplyLocation` | ºŞ²z©Ò¦³¾ÚÂI |
-| ª«¸ê¦Cªí | `/SupplyItem` | ºŞ²z©Ò¦³ª«¸ê |
-| ª«¸êÂà²¾ | `/SupplyTransfer/Create` | «Ø¥ßÂà²¾ |
-| Âà²¾¬ö¿ı | `/SupplyTransfer` | ¬d¬İ¬ö¿ı |
-| ¦a¹ÏÁ`Äı | `/Map` | ¦a¹ÏÅã¥Ü |
-
----
-
-## ?? ´ú¸ÕÀË¬d¶µ¥Ø
-
-### ¥\¯à´ú¸Õ
-- [ ] ¾Ô±¡Á`Äı¼Æ¾Ú¥¿½TÅã¥Ü
-- [ ] ¾ÚÂI CRUD ¥\¯à¥¿±`
-- [ ] ª«¸ê CRUD ¥\¯à¥¿±`
-- [ ] ª«¸ê¿z¿ï¥\¯à¥¿±`
-- [ ] ª«¸êÂà²¾ÅŞ¿è¥¿½T
-- [ ] ®w¦s¼Æ¶q§ó·s¥¿½T
-- [ ] Âà²¾¬ö¿ı«Ø¥ß¥¿½T
-- [ ] ¦a¹ÏÅã¥Ü¥¿±`
-- [ ] Marker ÂIÀ»¼u¥X¸ê°T
-
-### ¸ê®ÆÅçÃÒ´ú¸Õ
-- [ ] ¤£¥iÂà²¾¶W¹L¨Ó·½¼Æ¶q
-- [ ] ¨Ó·½»P¥Ø¼Ğ¤£¥i¬Û¦P
-- [ ] ¥²¶ñÄæ¦ìÅçÃÒ
-- [ ] ¼Æ¶q¥²¶·¤j©ó 0
-
-### UI/UX ´ú¸Õ
-- [ ] ©Ò¦³­¶­±¥¿±`Åã¥Ü
-- [ ] ¾ÉÄı¦C³sµ²¥¿±`
-- [ ] «ö¶s¥\¯à¥¿±`
-- [ ] ¦¨¥\/¿ù»~°T®§Åã¥Ü
-- [ ] ª¬ºAÃC¦â¥¿½T
-
----
-
-## ?? ®Ä¯à¦Ò¶q
-
-### ¤w¹ê²{Àu¤Æ
-- ? ¸ê®Æ®w¯Á¤Ş¡]LocationId, Category¡^
-- ? Include() ¹w¸ü¤JÃöÁp¸ê®Æ
-- ? ­­¨î¬d¸ßµ§¼Æ¡]Âà²¾¬ö¿ı³Ì¦h 100 µ§¡^
-- ? ¨Ï¥Î²§¨B¤èªk (async/await)
-
-### ¥¼¨Ó¥iÀu¤Æ
-- ¤À­¶¥\¯à
-- §Ö¨ú¾÷¨î
-- ©µ¿ğ¸ü¤J
-- À£ÁY JS/CSS
-
----
-
-## ?? ¥¼¨ÓÂX¥R¥\¯à
-
-### Phase 4 ³W¹º
-- ¨Ï¥ÎªÌµn¤J»PÅçÃÒ
-- ¨¤¦âÅv­­ºŞ²z
-- Excel ¶×¤J/¶×¥X
-- ¾Ş§@¬ö¿ı Audit Log
-- Email/LINE ³qª¾
-- ¸ê®Æ³Æ¥÷¾÷¨î
-- Azure ³¡¸p
-
----
-
-## ?? µ{¦¡½X²Î­p
-
-### µ{¦¡½X¦æ¼Æ
-- C# µ{¦¡½X¡G¬ù 2,500 ¦æ
-- Razor/HTML¡G¬ù 2,200 ¦æ
-- SQL ¸}¥»¡G¬ù 200 ¦æ
-- ¤å¥ó¡G¬ù 2,000 ¦æ
-- **Á`­p**¡G¬ù 6,900 ¦æ
-
-### ÀÉ®×²Î­p
-- Controllers: 5 ­Ó
-- Models: 7 ­Ó
-- Views: 19 ­Ó
-- Services: 2 ­Ó
-- SQL ¸}¥»: 2 ­Ó
-- ¤å¥ó: 4 ­Ó
-
----
-
-## ? «~½è«OÃÒ
-
-### ½sÄ¶ª¬ºA
-- ? 0 ­Ó½sÄ¶¿ù»~
-- ?? 0 ­ÓÄµ§i¡]¤w­×¥¿¡^
-- ? «Ø¸m¦¨¥\
-
-### µ{¦¡½X«~½è
-- ? ©R¦W³W½d²Î¤@
-- ? µù¸Ñ§¹¾ã
-- ? ¿ù»~³B²z§¹µ½
-- ? ¨Ï¥Î async/await «D¦P¨B¼Ò¦¡
-- ? ¿í´` MVC ¬[ºc­ì«h
-
----
-
-## ?? ¬ÛÃö¤å¥ó
-
-1. **¶}µo³W®æ®Ñ**¡G`Markdown/ResourceSharingPlatform_dev_spec.md`
-   - §¹¾ã¨t²Î»İ¨D»P³]­p³W®æ
-
-2. **°õ¦æ«ü«n**¡G`Markdown/ExecutionGuide.md`
-   - ¸Ô²Ó°õ¦æ¨BÆJ»P°İÃD±Æ°£
-
-3. **¶}µo¶i«×**¡G`Markdown/DevelopmentProgress.md`
-   - ¶}µo¶i«×°lÂÜ»PÀË¬d²M³æ
-
-4. **§¹¦¨³ø§i**¡G`Markdown/CompletionReport.md`¡]¥»¤å¥ó¡^
-   - ¶}µo§¹¦¨Á`µ²
-
----
-
-## ?? ¾Ç²ß¸ê·½
-
-### ¨Ï¥Î¨ìªº§Ş³N
-- ASP.NET Core MVC
-- Entity Framework Core
-- SQL Server
-- Bootstrap 5
-- Leaflet.js
-- Razor Pages
-
-### ³]­p¼Ò¦¡
-- MVC Pattern
-- Repository Pattern¡]³z¹L EF Core¡^
-- Service Layer Pattern
-- Dependency Injection
-
----
-
-## ????? ¶}µoªÌ³Æµù
-
-### ÃöÁä³]­p¨Mµ¦
-1. **³n§R°£**¡G«O¯d¾ú¥v¸ê®Æ¡A¨Ï¥Î IsActive ¼Ğ°O
-2. **¥æ©öºŞ²z**¡G½T«Oª«¸êÂà²¾ªº¸ê®Æ§¹¾ã©Ê
-3. **ª¬ºA­pºâ**¡G¦b Model ¤¤¥[¤J Helper ¤èªk­pºâª¬ºA
-4. **¹w³]­º­¶**¡G³]©w¬° Dashboard ¾Ô±¡Á`Äı
-
-### ¤wª¾­­¨î
-- ¥Ø«eµLµn¤JÅçÃÒ¡]Phase 4 ¥\¯à¡^
-- µL¤À­¶¥\¯à¡]¸ê®Æ¶q¤j®É»İ­n¡^
-- µL§Y®É³qª¾¥\¯à
-
-### «ØÄ³§ï¶i
-- ¥[¤J·j´M¥\¯à
-- ¥[¤J±Æ§Ç¥\¯à
-- ¥[¤J¶×¥X Excel ¥\¯à
-- ¥[¤Jª«¸ê·Ó¤ù¤W¶Ç
-
----
-
-## ?? µ²½×
-
-¥»±M®×¤w§¹¦¨©Ò¦³®Ö¤ß¥\¯à¶}µo¡Aµ{¦¡½X¤w³q¹L½sÄ¶¡A¥i¥H¶}©l°õ¦æ´ú¸Õ¡C
-
-### ¤U¤@¨B¦æ°Ê
-1. °õ¦æ SQL ¸}¥»«Ø¥ß¸ê®Æ®w
-2. °õ¦æ±M®×¶i¦æ¥\¯à´ú¸Õ
-3. ®Ú¾Ú´ú¸Õµ²ªG¶i¦æ·L½Õ
-4. ·Ç³Æ¥¿¦¡³¡¸p
-
-### ±M®×¥æ¥Iª¬ºA
-? **¥i¥H¥æ¥I¨Ï¥Î**
-
-©Ò¦³®Ö¤ß¥\¯à¤w§¹¾ã¹ê²{¡A²Å¦X­ì©l³W®æ®Ñ»İ¨D¡C
-
----
-
-**¶}µo§¹¦¨¤é´Á**¡G2025¦~
-**¶}µoª¬ºA**¡G? Phase 1-2 §¹¦¨¡APhase 3 ´ú¸Õ¤¤
-**¾ãÅé§¹¦¨«×**¡G90% («İ´ú¸ÕÅçÃÒ)
-
-?? **®¥³ß¡I¦a¤èª«¸êºŞ²z¥­¥x¶}µo§¹¦¨¡I** ??
+# åœ°æ–¹ç‰©è³‡ç®¡ç†å¹³å°ï¼å®Œæˆå ±å‘Š
+
+æœ€å¾Œæ›´æ–°ï¼š2026-08-07
+
+## å°ˆæ¡ˆç‹€æ…‹
+
+ç›®å‰ç‰ˆæœ¬å·²å¯å»ºç½®ã€å•Ÿå‹•ä¸¦é€£æ¥ SQL Server `LocalSupplyDB`ï¼Œå®šä½ç‚ºå¯ä¾›å…§éƒ¨é©—æ”¶èˆ‡éƒ¨ç½²æ¸¬è©¦çš„ç‰ˆæœ¬ã€‚
+
+- ASP.NET Core MVC / .NET 8
+- Entity Framework Core 8 / SQL Server
+- Bootstrap 5 / Razor Views
+- Cookie Authentication èˆ‡è§’è‰²æˆæ¬Š
+- Release èˆ‡ Debug å‡æ‡‰ç”±å°ˆæ¡ˆæ ¹ç›®éŒ„å»ºç½®
+
+## å·²å®ŒæˆåŠŸèƒ½
+
+1. ä½¿ç”¨è€…ç™»å…¥ã€ç™»å‡ºã€å¸³è™Ÿç®¡ç†èˆ‡è§’è‰²æ¬Šé™ã€‚
+2. æ“šé»æ–°å¢ã€ç·¨è¼¯ã€åœç”¨ã€è©³ç´°è³‡æ–™èˆ‡åœ°åœ–é¡¯ç¤ºã€‚
+3. åº«å­˜ç¨®é¡ä¸»æª”ã€è¦æ ¼ã€æœ€å°å–®ä½ã€å…¨ç³»çµ±å®‰å…¨åº«å­˜èˆ‡å„æ“šé»å®‰å…¨åº«å­˜ã€‚
+4. ç‰©è³‡æ–°å¢ã€ç·¨è¼¯ã€åœç”¨ã€åœ–ç‰‡ä¸Šå‚³ã€æŸ¥è©¢èˆ‡ Excel åŒ¯å‡ºã€‚
+5. æ“šé»é–“æ‰¹æ¬¡èª¿æ’¥ã€å¾…æ”¶è²¨ã€ç¢ºèªæ”¶è²¨èˆ‡å–æ¶ˆã€‚
+6. å‡ºåº«ã€æè´ˆã€å ±å»¢åŠå…¶æ­·å²ç´€éŒ„èˆ‡ Excel åŒ¯å‡ºã€‚
+7. æˆ°æƒ…ç¸½è¦½ã€æ“šé»ä½åº«å­˜ã€å…¨ç³»çµ±ç¸½é‡ä¸è¶³ã€å³æœŸèˆ‡éæœŸè­¦ç¤ºã€‚
+8. é ˜å–è€…åˆ†æã€‚
+9. LINE é€šçŸ¥è¨­å®šä»‹é¢èˆ‡æ¸¬è©¦æ¨¡æ“¬ã€‚
+10. AI æ™ºæ…§å…¥åº«è¨­å®šã€è¼¸å…¥ã€ç¢ºèªèˆ‡ç´€éŒ„ä»‹é¢ã€‚
+
+## å®‰å…¨åº«å­˜è¦å‰‡
+
+- è¦æ ¼ä¸åƒèˆ‡å®‰å…¨åº«å­˜åˆ†çµ„ã€‚
+- æ“šé»å®‰å…¨åº«å­˜ä»¥ `LocationId + Category + ItemName` çš„å¯¦éš›åº«å­˜åˆè¨ˆåˆ¤æ–·ã€‚
+- å…¨ç³»çµ±å®‰å…¨åº«å­˜ä»¥ `Category + ItemName` åœ¨æ‰€æœ‰æ“šé»çš„å¯¦éš›åº«å­˜åˆè¨ˆåˆ¤æ–·ã€‚
+- ã€Œç›®å‰æ•¸é‡ã€ä¸åŒ…å«å°šæœªç¢ºèªæ”¶è²¨çš„èª¿æ’¥æ•¸é‡ã€‚
+- æœ‰æ•ˆæœŸé™ä»æŒ‰æ¯ä¸€ç­†åº«å­˜æ‰¹æ¬¡åˆ¤æ–·ã€‚
+- å®‰å…¨åº«å­˜ç‚º 0 æ™‚è¦–ç‚ºæœªå•Ÿç”¨è©²é …è­¦ç¤ºã€‚
+
+## è³‡æ–™å‡ç´šç‹€æ…‹
+
+èˆŠç‰ˆ `InventoryTypeSetting` å·²é·ç§»è‡³ï¼š
+
+- `InventoryItemDefinition`
+- `InventoryItemVariant`
+- `LocationInventorySafetyStock`
+
+èˆŠè¡¨åŠ `SupplyItem.InventoryTypeSettingId` æš«æ™‚ä¿ç•™ä¾›è¿½æº¯ï¼Œæ–°å¢ç‰©è³‡ä½¿ç”¨ `SupplyItem.InventoryItemVariantId`ã€‚
+
+## æª”æ¡ˆå„²å­˜
+
+- ä¸€èˆ¬ç‰©è³‡åœ–ç‰‡ï¼š`wwwroot/uploads/items`
+- AI å…¥åº«åœ–ç‰‡ï¼š`wwwroot/uploads/ai-stockin`
+- è³‡æ–™åº«åªä¿å­˜ç›¸å°è·¯å¾‘ï¼Œä¸ä¿å­˜åœ–ç‰‡äºŒé€²ä½è³‡æ–™ã€‚
+
+éƒ¨ç½²æ™‚å¿…é ˆå°‡ uploads è³‡æ–™å¤¾è¦–ç‚ºæŒä¹…åŒ–è³‡æ–™ä¸¦ç´å…¥å‚™ä»½ã€‚
+
+## é©—è­‰çµæœ
+
+- å°ˆæ¡ˆå»ºç½®ï¼š0 warning / 0 error
+- æ–°å®‰å…¨åº«å­˜è³‡æ–™è¡¨å·²åœ¨ `LocalSupplyDB` å»ºç«‹
+- èˆŠè¨­å®šã€è¦æ ¼ã€æ“šé»é–€æª»èˆ‡æ—¢æœ‰ç‰©è³‡å¤–éµå·²å®Œæˆé·ç§»é©—è­‰
+
+## å°šæœªå®Œæˆæˆ–éœ€æ­£å¼ç’°å¢ƒè£œå¼·
+
+- LINE Messaging API ç›®å‰åªæœ‰è¨­å®šèˆ‡æ¨¡æ“¬æ¸¬è©¦ï¼Œå°šæœªæ­£å¼æ¨æ’­ã€‚
+- AI å…¥åº«å°šæœªä¸²æ¥æ­£å¼æ¨¡å‹ APIã€‚
+- åœ–ç‰‡ç›®å‰ä¿å­˜åœ¨ç¶²ç«™ç›®éŒ„ï¼Œæ­£å¼éƒ¨ç½²å»ºè­°æ”¹ç”¨æŒä¹…åŒ–ç£ç¢Ÿã€NAS æˆ–ç‰©ä»¶å„²å­˜ã€‚
+- å°ˆæ¡ˆå°šæœªå°å…¥ EF Core Migrationsï¼Œè³‡æ–™åº«ç‰ˆæœ¬ç”± SQL èˆ‡å•Ÿå‹•åˆå§‹åŒ–ç¨‹å¼å…±åŒç¶­è­·ã€‚
+- æ­£å¼ä¸Šç·šå‰å¿…é ˆæ›´æ›é è¨­ç®¡ç†å“¡å¯†ç¢¼ã€é€£ç·šå­—ä¸²èˆ‡æ‰€æœ‰ API é‡‘é‘°ã€‚

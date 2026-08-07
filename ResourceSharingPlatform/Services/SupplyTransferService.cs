@@ -125,6 +125,22 @@ namespace ResourceSharingPlatform.Services
 
                 if (targetItem == null)
                 {
+                    var destinationSafetyStock = 0;
+                    if (sourceItem.InventoryItemVariantId.HasValue)
+                    {
+                        var definitionId = await _context.InventoryItemVariants
+                            .Where(x => x.Id == sourceItem.InventoryItemVariantId.Value)
+                            .Select(x => (int?)x.InventoryItemDefinitionId)
+                            .FirstOrDefaultAsync();
+                        if (definitionId.HasValue)
+                        {
+                            destinationSafetyStock = await _context.LocationInventorySafetyStocks
+                                .Where(x => x.LocationId == line.ToLocationId && x.InventoryItemDefinitionId == definitionId.Value)
+                                .Select(x => (int?)x.SafetyStock)
+                                .FirstOrDefaultAsync() ?? 0;
+                        }
+                    }
+
                     targetItem = new SupplyItem
                     {
                         Category = sourceItem.Category,
@@ -134,8 +150,9 @@ namespace ResourceSharingPlatform.Services
                         Unit = sourceItem.Unit,
                         StockType = sourceItem.StockType,
                         ExpirationDate = sourceItem.ExpirationDate,
+                        InventoryItemVariantId = sourceItem.InventoryItemVariantId,
                         LocationId = line.ToLocationId,
-                        SafetyStock = sourceItem.SafetyStock,
+                        SafetyStock = destinationSafetyStock,
                         Remark = sourceItem.Remark,
                         IsActive = true,
                         CreatedAt = now
