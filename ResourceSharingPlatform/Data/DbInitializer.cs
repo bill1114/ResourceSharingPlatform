@@ -6,7 +6,13 @@ namespace ResourceSharingPlatform.Data
 {
     public static class DbInitializer
     {
-        public static async Task EnsureInventoryTypeSettingTableAsync(IServiceProvider services)
+        // InventoryTypeSetting was a transitional table from before InventoryItemDefinition/
+        // InventoryItemVariant existed, and it was removed once confirmed dead (0 rows, no
+        // Controller/Service/View reads or writes it - InventoryItemDefinition is backfilled
+        // directly from live SupplyItem rows by BackfillInventoryDefinitionsFromSupplyItemsAsync
+        // instead). The DROP block below is idempotent cleanup for any existing installation
+        // that still has the old table/column; on a fresh database it is a no-op.
+        public static async Task EnsureInventoryCatalogTablesAsync(IServiceProvider services)
         {
             using var scope = services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -18,42 +24,27 @@ namespace ResourceSharingPlatform.Data
             // split into separate calls, or the later statement fails with "invalid column
             // name" even though the ALTER already ran earlier in the same original string.
             await context.Database.ExecuteSqlRawAsync("""
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'InventoryTypeSetting')
+                IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SupplyItem') AND name = 'InventoryTypeSettingId')
                 BEGIN
-                    CREATE TABLE InventoryTypeSetting (
-                        Id INT IDENTITY(1,1) PRIMARY KEY,
-                        Category NVARCHAR(50) NOT NULL,
-                        ItemName NVARCHAR(100) NOT NULL,
-                        Specification NVARCHAR(200) NULL,
-                        Unit NVARCHAR(20) NULL,
-                        SafetyStock INT NOT NULL DEFAULT 0,
-                        IsActive BIT NOT NULL DEFAULT 1,
-                        CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
-                        UpdatedAt DATETIME NULL,
-                        CONSTRAINT CK_InventoryTypeSetting_SafetyStock CHECK (SafetyStock >= 0)
+                    DECLARE @fk NVARCHAR(200) = (
+                        SELECT name FROM sys.foreign_keys
+                        WHERE parent_object_id = OBJECT_ID('SupplyItem')
+                          AND referenced_object_id = OBJECT_ID('InventoryTypeSetting')
                     );
-                END;
+                    IF @fk IS NOT NULL
+                        EXEC('ALTER TABLE SupplyItem DROP CONSTRAINT ' + @fk);
 
-                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_InventoryTypeSetting_ActiveDefinition')
-                BEGIN
-                    CREATE UNIQUE INDEX UX_InventoryTypeSetting_ActiveDefinition
-                        ON InventoryTypeSetting(Category, ItemName, Specification)
-                        WHERE IsActive = 1;
+                    IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SupplyItem_InventoryTypeSettingId')
+                        DROP INDEX IX_SupplyItem_InventoryTypeSettingId ON SupplyItem;
+
+                    ALTER TABLE SupplyItem DROP COLUMN InventoryTypeSettingId;
                 END;
                 """);
 
             await context.Database.ExecuteSqlRawAsync("""
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('SupplyItem') AND name = 'InventoryTypeSettingId')
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'InventoryTypeSetting')
                 BEGIN
-                    ALTER TABLE SupplyItem ADD InventoryTypeSettingId INT NULL;
-                    ALTER TABLE SupplyItem ADD CONSTRAINT FK_SupplyItem_InventoryTypeSetting
-                        FOREIGN KEY (InventoryTypeSettingId) REFERENCES InventoryTypeSetting(Id);
-                    CREATE INDEX IX_SupplyItem_InventoryTypeSettingId ON SupplyItem(InventoryTypeSettingId);
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('InventoryTypeSetting') AND name = 'Unit')
-                BEGIN
-                    ALTER TABLE InventoryTypeSetting ADD Unit NVARCHAR(20) NULL;
+                    DROP TABLE InventoryTypeSetting;
                 END;
                 """);
 
@@ -123,72 +114,10 @@ namespace ResourceSharingPlatform.Data
                 END;
                 """);
 
-            await context.Database.ExecuteSqlRawAsync("""
-                IF NOT EXISTS (SELECT 1 FROM InventoryItemDefinition)
-                BEGIN
-                INSERT INTO InventoryItemDefinition
-                    (Category, ItemName, Unit, GlobalSafetyStock, IsActive, CreatedAt)
-                SELECT s.Category, s.ItemName,
-                       COALESCE(NULLIF(MAX(s.Unit), ''), N'個'),
-                       MAX(s.SafetyStock), MAX(CAST(s.IsActive AS INT)), MIN(s.CreatedAt)
-                FROM InventoryTypeSetting s
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM InventoryItemDefinition d
-                    WHERE d.Category = s.Category AND d.ItemName = s.ItemName AND d.IsActive = 1
-                )
-                GROUP BY s.Category, s.ItemName;
-
-                INSERT INTO InventoryItemVariant
-                    (InventoryItemDefinitionId, Specification, IsActive, CreatedAt)
-                SELECT d.Id, s.Specification, MAX(CAST(s.IsActive AS INT)), MIN(s.CreatedAt)
-                FROM InventoryTypeSetting s
-                INNER JOIN InventoryItemDefinition d
-                    ON d.Category = s.Category AND d.ItemName = s.ItemName AND d.IsActive = 1
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM InventoryItemVariant v
-                    WHERE v.InventoryItemDefinitionId = d.Id
-                      AND (v.Specification = s.Specification OR (v.Specification IS NULL AND s.Specification IS NULL))
-                      AND v.IsActive = 1
-                )
-                GROUP BY d.Id, s.Specification;
-
-                UPDATE si
-                SET InventoryItemVariantId = v.Id
-                FROM SupplyItem si
-                INNER JOIN InventoryTypeSetting oldSetting ON oldSetting.Id = si.InventoryTypeSettingId
-                INNER JOIN InventoryItemDefinition d
-                    ON d.Category = oldSetting.Category AND d.ItemName = oldSetting.ItemName AND d.IsActive = 1
-                INNER JOIN InventoryItemVariant v
-                    ON v.InventoryItemDefinitionId = d.Id
-                    AND (v.Specification = oldSetting.Specification OR (v.Specification IS NULL AND oldSetting.Specification IS NULL))
-                    AND v.IsActive = 1
-                WHERE si.InventoryItemVariantId IS NULL;
-
-                UPDATE si
-                SET InventoryItemVariantId = v.Id
-                FROM SupplyItem si
-                INNER JOIN InventoryItemDefinition d
-                    ON d.Category = si.Category AND d.ItemName = si.ItemName AND d.IsActive = 1
-                INNER JOIN InventoryItemVariant v
-                    ON v.InventoryItemDefinitionId = d.Id
-                    AND (v.Specification = si.Specification OR (v.Specification IS NULL AND si.Specification IS NULL))
-                    AND v.IsActive = 1
-                WHERE si.InventoryItemVariantId IS NULL;
-
-                INSERT INTO LocationInventorySafetyStock
-                    (LocationId, InventoryItemDefinitionId, SafetyStock, CreatedAt)
-                SELECT si.LocationId, d.Id, MAX(si.SafetyStock), GETDATE()
-                FROM SupplyItem si
-                INNER JOIN InventoryItemDefinition d
-                    ON d.Category = si.Category AND d.ItemName = si.ItemName AND d.IsActive = 1
-                WHERE si.IsActive = 1
-                  AND NOT EXISTS (
-                      SELECT 1 FROM LocationInventorySafetyStock ls
-                      WHERE ls.LocationId = si.LocationId AND ls.InventoryItemDefinitionId = d.Id
-                  )
-                GROUP BY si.LocationId, d.Id;
-                END;
-                """);
+            // InventoryItemDefinition/Variant/LocationInventorySafetyStock population now happens
+            // entirely in BackfillInventoryDefinitionsFromSupplyItemsAsync (sourced from live
+            // SupplyItem rows) - the InventoryTypeSetting-sourced backfill that used to run here
+            // was removed along with the table it read from.
         }
 
         // Adds StockType (無效期物資/有效期物資/冷凍食品) to InventoryItemDefinition so 新增物資's

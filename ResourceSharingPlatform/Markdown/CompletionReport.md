@@ -1,6 +1,6 @@
 # 地方物資管理平台－完成報告
 
-最後更新：2026-08-07
+最後更新：2026-08-09
 
 ## 專案狀態
 
@@ -36,13 +36,13 @@
 
 ## 資料升級狀態
 
-舊版 `InventoryTypeSetting` 已遷移至：
+物資目錄使用：
 
 - `InventoryItemDefinition`
 - `InventoryItemVariant`
 - `LocationInventorySafetyStock`
 
-舊表及 `SupplyItem.InventoryTypeSettingId` 暫時保留供追溯，新增物資使用 `SupplyItem.InventoryItemVariantId`。
+新增物資使用 `SupplyItem.InventoryItemVariantId`。過渡表 `InventoryTypeSetting` 與 `SupplyItem.InventoryTypeSettingId` 已於 2026-08 確認為死資料後移除，既有安裝升級時會自動清除殘留物件（詳見 `ResourceSharingPlatform_dev_spec.md` 10.1）。
 
 ## 檔案儲存
 

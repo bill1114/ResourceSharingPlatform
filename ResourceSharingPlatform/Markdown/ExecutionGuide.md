@@ -1,6 +1,6 @@
 # 地方物資管理平台－執行、打包與部署指南
 
-最後更新：2026-08-07
+最後更新：2026-08-09
 
 ## 環境需求
 
@@ -53,9 +53,9 @@ sqlcmd -S . -E -i .\ResourceSharingPlatform\Database\CreateDatabase.sql -b
 
 - 補建物資定義、規格、據點安全庫存資料表。
 - 補上 `SupplyItem.InventoryItemVariantId`。
-- 第一次將舊 `InventoryTypeSetting` 資料遷移到新結構。
+- 清除已於 2026-08 移除的過渡表 `InventoryTypeSetting`（若既有安裝仍殘留）。
 
-正式環境升級前仍必須先完整備份資料庫。
+正式環境升級前仍必須先完整備份資料庫；每週自動備份設定見 `Markdown/BackupPlan.md`。
 
 ## 發布打包
 

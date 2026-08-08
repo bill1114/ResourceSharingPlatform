@@ -138,16 +138,23 @@ GROUP BY Category, ItemName
 ## 10. 資料庫版本策略
 
 - 全新建庫：`Database/CreateDatabase.sql`
-- 舊版升級：`DbInitializer.EnsureInventoryTypeSettingTableAsync`
-- 舊 `InventoryTypeSetting` 只做一次新主檔遷移。
+- 舊版升級：`DbInitializer.EnsureInventoryCatalogTablesAsync`（原名 `EnsureInventoryTypeSettingTableAsync`，2026-08 隨 10.1 的移除一併改名，改名更貼近它現在實際負責的目錄資料表）
 - SQL 必須保持 idempotent。
-- 正式升級前必須備份資料庫及 uploads。
+- 正式升級前必須備份資料庫及 uploads；每週自動備份與還原方式見 `Markdown/BackupPlan.md`。
+
+### 10.1 已移除：InventoryTypeSetting（2026-08）
+
+`InventoryTypeSetting` 是 `InventoryItemDefinition`／`InventoryItemVariant` 這套正式目錄出現前的過渡表，原始設計是「先寫入 InventoryTypeSetting，再遷移進 InventoryItemDefinition」。但這台機器的資料庫從未真的寫入過這張表（0 筆），現有的 `InventoryItemDefinition` 資料是 `DbInitializer.BackfillInventoryDefinitionsFromSupplyItemsAsync` 直接從 `SupplyItem` 回填出來的；除了它自己的 model／`DbInitializer`／`SupplyItem.InventoryTypeSettingId` 這條 FK 外，沒有任何 Controller/Service/View 讀寫它（`InventoryTypeSettingController` 這個名字容易誤會，但它從頭到尾操作的都是 `InventoryItemDefinition`，跟這張舊表無關）。
+
+確認是乾淨的死資料後移除：`Models/InventoryTypeSetting.cs`、`SupplyItem.InventoryTypeSettingId` 欄位與導覽屬性、`ApplicationDbContext` 的對應設定、`Database/CreateDatabase.sql` 的建表語句都已拿掉。既有安裝升級時，`EnsureInventoryCatalogTablesAsync` 會自動偵測並 DROP 掉殘留的表／欄位／FK／索引（`IF EXISTS` 包裹，全新資料庫是 no-op）。`InventoryTypeSettingController` 與 `Views/InventoryTypeSetting/*` 維持不動——路由名稱雖然容易誤會，但改名會動到 `/InventoryTypeSetting/...` 這個既有路由與導覽列連結，屬於單純改名不算這次重構範圍。
+
+這次重構刻意不包含拔掉 `SupplyItem.Category/ItemName/Specification/Unit/StockType/SafetyStock` 這些跟目錄有重疊的欄位——它們被 14 個以上的既有功能（出庫/捐贈/報廢/轉移/戰情總覽/據點地圖/AI入庫等）直接讀寫，且本質上是「建立當下的目錄快照」，對物資異動紀錄有其歷史留存價值（例如日後改了種類名稱，舊紀錄仍保留當時的名稱），不算真正的技術債，因此保留。
 
 ## 11. 已知限制
 
 - 尚未使用 EF Core Migrations。
 - `SupplyItem.Quantity` 是可變餘額，尚未建立統一 InventoryTransaction Ledger。
-- `SupplyItem.SafetyStock` 與 `InventoryTypeSetting` 為相容舊版保留，新警示邏輯不以它們為主。
+- `SupplyItem.SafetyStock` 為建立當下的據點門檻快照，新警示邏輯不以它為主（實際判斷邏輯見第 6 節）。
 - LINE 與 AI 外部 API 尚未正式串接。
 - API 金鑰資料表目前仍可存明文，正式環境需改用 Secret Store。
 - `SupplyItem` 尚未加入 rowversion 併發控制。

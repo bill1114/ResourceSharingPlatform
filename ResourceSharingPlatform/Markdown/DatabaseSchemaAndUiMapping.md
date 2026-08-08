@@ -1,6 +1,6 @@
 # 地方物資管理平台－資料庫與介面對照
 
-最後更新：2026-08-07
+最後更新：2026-08-09
 
 ## 資料表總覽
 
@@ -19,7 +19,6 @@
 | `LineNotificationSettings` | LINE 設定 | LINE 通知設定 |
 | `AIStockInSettings` | AI API 設定 | AI 入庫設定 |
 | `AIStockInLog` | AI 輸入與確認稽核 | AI 入庫紀錄 |
-| `InventoryTypeSetting` | 舊版庫存設定，遷移追溯用 | 無新介面 |
 
 ## 核心關聯
 
@@ -88,7 +87,6 @@ erDiagram
 | `ExpirationDate` | date null | 有效期限 |
 | `ImagePath` | nvarchar(300) null | 圖片相對路徑 |
 | `InventoryItemVariantId` | int null | FK → 新規格主檔 |
-| `InventoryTypeSettingId` | int null | 舊設定外鍵，遷移追溯 |
 | `LocationId` | int | FK → 據點 |
 | `SafetyStock` | int | 舊版相容欄位 |
 | `Remark` | nvarchar(300) null | 備註 |
@@ -132,4 +130,4 @@ erDiagram
 
 ## 舊版相容
 
-`InventoryTypeSetting` 與 `SupplyItem.InventoryTypeSettingId` 暫時保留。新功能不再寫入舊表；第一次升級時，舊設定依種類與名稱整併，規格拆到 `InventoryItemVariant`，全系統門檻取舊值最大值。
+過渡表 `InventoryTypeSetting` 與 `SupplyItem.InventoryTypeSettingId` 已於 2026-08 移除（確認為 0 筆、無任何 Controller/Service/View 讀寫後刪除，詳見 `ResourceSharingPlatform_dev_spec.md` 10.1）。既有安裝升級時 `DbInitializer.EnsureInventoryCatalogTablesAsync` 會自動 DROP 掉殘留的表／欄位。

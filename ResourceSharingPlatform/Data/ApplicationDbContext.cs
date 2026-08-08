@@ -20,7 +20,6 @@ namespace ResourceSharingPlatform.Data
         public DbSet<SupplyDisposalLog> SupplyDisposalLogs { get; set; }
         public DbSet<AIStockInSettings> AIStockInSettings { get; set; }
         public DbSet<AIStockInLog> AIStockInLogs { get; set; }
-        public DbSet<InventoryTypeSetting> InventoryTypeSettings { get; set; }
         public DbSet<InventoryItemDefinition> InventoryItemDefinitions { get; set; }
         public DbSet<InventoryItemVariant> InventoryItemVariants { get; set; }
         public DbSet<LocationInventorySafetyStock> LocationInventorySafetyStocks { get; set; }
@@ -40,27 +39,15 @@ namespace ResourceSharingPlatform.Data
             modelBuilder.Entity<SupplyDisposalLog>().ToTable("SupplyDisposalLog");
             modelBuilder.Entity<AIStockInSettings>().ToTable("AIStockInSettings");
             modelBuilder.Entity<AIStockInLog>().ToTable("AIStockInLog");
-            modelBuilder.Entity<InventoryTypeSetting>().ToTable("InventoryTypeSetting");
             modelBuilder.Entity<InventoryItemDefinition>().ToTable("InventoryItemDefinition");
             modelBuilder.Entity<InventoryItemVariant>().ToTable("InventoryItemVariant");
             modelBuilder.Entity<LocationInventorySafetyStock>().ToTable("LocationInventorySafetyStock");
-
-            modelBuilder.Entity<InventoryTypeSetting>()
-                .HasIndex(x => new { x.Category, x.ItemName, x.Specification })
-                .IsUnique()
-                .HasFilter("[IsActive] = 1");
 
             // Configure relationships
             modelBuilder.Entity<SupplyItem>()
                 .HasOne(x => x.Location)
                 .WithMany(x => x.SupplyItems)
                 .HasForeignKey(x => x.LocationId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<SupplyItem>()
-                .HasOne(x => x.InventoryTypeSetting)
-                .WithMany()
-                .HasForeignKey(x => x.InventoryTypeSettingId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<SupplyItem>()

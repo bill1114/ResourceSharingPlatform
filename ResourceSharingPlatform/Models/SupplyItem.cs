@@ -11,7 +11,6 @@
         public string StockType { get; set; } = StockTypes.HasExpiry;
         public DateTime? ExpirationDate { get; set; }
         public string? ImagePath { get; set; }
-        public int? InventoryTypeSettingId { get; set; }
         public int? InventoryItemVariantId { get; set; }
         public int LocationId { get; set; }
         public int SafetyStock { get; set; }
@@ -22,7 +21,6 @@
 
         // Navigation property
         public SupplyLocation? Location { get; set; }
-        public InventoryTypeSetting? InventoryTypeSetting { get; set; }
         public InventoryItemVariant? InventoryItemVariant { get; set; }
 
         // Helper method to get status

@@ -90,34 +90,6 @@ BEGIN
 END
 GO
 
--- 舊版相容表：新功能不再寫入，保留供既有資料遷移與追溯。
-IF OBJECT_ID(N'dbo.InventoryTypeSetting', N'U') IS NULL
-BEGIN
-    EXEC(N'
-        CREATE TABLE dbo.InventoryTypeSetting (
-            Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_InventoryTypeSetting PRIMARY KEY,
-            Category NVARCHAR(50) NOT NULL,
-            ItemName NVARCHAR(100) NOT NULL,
-            Specification NVARCHAR(200) NULL,
-            Unit NVARCHAR(20) NULL,
-            SafetyStock INT NOT NULL CONSTRAINT DF_InventoryTypeSetting_SafetyStock DEFAULT 0,
-            IsActive BIT NOT NULL CONSTRAINT DF_InventoryTypeSetting_IsActive DEFAULT 1,
-            CreatedAt DATETIME NOT NULL CONSTRAINT DF_InventoryTypeSetting_CreatedAt DEFAULT GETDATE(),
-            UpdatedAt DATETIME NULL,
-            CONSTRAINT CK_InventoryTypeSetting_SafetyStock CHECK (SafetyStock >= 0)
-        );
-    ');
-END
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'InventoryTypeSetting') AND name = N'UX_InventoryTypeSetting_ActiveDefinition')
-BEGIN
-    CREATE UNIQUE INDEX UX_InventoryTypeSetting_ActiveDefinition
-        ON InventoryTypeSetting(Category, ItemName, Specification)
-        WHERE IsActive = 1;
-END
-GO
-
 IF OBJECT_ID(N'SupplyItem', N'U') IS NULL
 BEGIN
     CREATE TABLE SupplyItem (
@@ -130,7 +102,6 @@ BEGIN
         StockType NVARCHAR(20) NOT NULL CONSTRAINT DF_SupplyItem_StockType DEFAULT N'HasExpiry',
         ExpirationDate DATE NULL,
         ImagePath NVARCHAR(300) NULL,
-        InventoryTypeSettingId INT NULL,
         InventoryItemVariantId INT NULL,
         LocationId INT NOT NULL,
         SafetyStock INT NOT NULL CONSTRAINT DF_SupplyItem_SafetyStock DEFAULT 0,
@@ -142,7 +113,6 @@ BEGIN
         CONSTRAINT CK_SupplyItem_SafetyStock CHECK (SafetyStock >= 0),
         CONSTRAINT CK_SupplyItem_StockType CHECK (StockType IN (N'NoExpiry', N'HasExpiry', N'Frozen')),
         CONSTRAINT FK_SupplyItem_Location FOREIGN KEY (LocationId) REFERENCES SupplyLocation(Id),
-        CONSTRAINT FK_SupplyItem_InventoryTypeSetting FOREIGN KEY (InventoryTypeSettingId) REFERENCES InventoryTypeSetting(Id),
         CONSTRAINT FK_SupplyItem_InventoryItemVariant FOREIGN KEY (InventoryItemVariantId) REFERENCES InventoryItemVariant(Id)
     );
 END
@@ -338,8 +308,6 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'SupplyIte
     CREATE INDEX IX_SupplyItem_StockType ON SupplyItem(StockType);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'SupplyItem') AND name = N'IX_SupplyItem_InventoryItemVariantId')
     CREATE INDEX IX_SupplyItem_InventoryItemVariantId ON SupplyItem(InventoryItemVariantId);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'SupplyItem') AND name = N'IX_SupplyItem_InventoryTypeSettingId')
-    CREATE INDEX IX_SupplyItem_InventoryTypeSettingId ON SupplyItem(InventoryTypeSettingId);
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'UserAccount') AND name = N'IX_UserAccount_LocationId')
     CREATE INDEX IX_UserAccount_LocationId ON UserAccount(LocationId);
