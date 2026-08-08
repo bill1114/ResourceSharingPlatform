@@ -8,7 +8,7 @@
 |---|---|
 | IIS 站台 | `ResourceSharingPlatform` |
 | Application Pool | `ResourceSharingPlatformPool`（No Managed Code，Integrated 管線） |
-| 實體路徑 | `D:\ResourceSharingPlatform0807\publish` |
+| 實體路徑 | `D:\ResourceSharingPlatform\publish` |
 | 綁定 | `http://localhost:8081`（僅限本機，未對外/對區網開放） |
 | 資料庫存取 | SQL Server 登入 `IIS APPPOOL\ResourceSharingPlatformPool`（Windows 驗證），已加入 `LocalSupplyDB` 的 `db_datareader`／`db_datawriter` |
 
@@ -16,8 +16,8 @@
 
 ```powershell
 # 1. 發布最新版本到既有的 publish 資料夾
-cd D:\ResourceSharingPlatform0807\ResourceSharingPlatform\ResourceSharingPlatform
-dotnet publish -c Release -o D:\ResourceSharingPlatform0807\publish
+cd D:\ResourceSharingPlatform\ResourceSharingPlatform\ResourceSharingPlatform
+dotnet publish -c Release -o D:\ResourceSharingPlatform\publish
 
 # 2. 重啟 App Pool 讓新版生效
 Import-Module WebAdministration
@@ -30,7 +30,7 @@ Restart-WebAppPool -Name ResourceSharingPlatformPool
 
 原本開發用（Kestrel）跟 IIS 各有一份 `wwwroot\uploads`，兩邊上傳的圖片互相看不到、`dotnet publish` 也不會同步。現在改成兩邊都讀寫同一個外部資料夾：
 
-- 實體路徑：`D:\ResourceSharingPlatform0807\Pictures\`（`items\` 一般物資圖片、`ai-stockin\` AI 智慧入庫照片）
+- 實體路徑：`D:\ResourceSharingPlatform\Pictures\`（`items\` 一般物資圖片、`ai-stockin\` AI 智慧入庫照片）
 - 由 `appsettings.json` 的 `"UploadsRoot"` 設定指定，`Services/UploadPathProvider.cs` 讀取；`Program.cs` 額外掛一個指到這個資料夾的 `/uploads` 靜態檔案中介軟體
 - 如果 `UploadsRoot` 沒設定，會自動退回原本的 `wwwroot/uploads`（相容性保底）
 - 這個資料夾在 `dotnet publish` 的輸出範圍之外，不會被覆蓋或清掉
