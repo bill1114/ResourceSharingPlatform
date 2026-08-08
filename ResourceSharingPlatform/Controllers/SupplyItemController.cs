@@ -12,15 +12,15 @@ namespace ResourceSharingPlatform.Controllers
     public class SupplyItemController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _environment;
+        private readonly UploadPathProvider _uploadPathProvider;
 
         private static readonly string[] AllowedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
         private const long MaxImageSizeBytes = 5 * 1024 * 1024;
 
-        public SupplyItemController(ApplicationDbContext context, IWebHostEnvironment environment)
+        public SupplyItemController(ApplicationDbContext context, UploadPathProvider uploadPathProvider)
         {
             _context = context;
-            _environment = environment;
+            _uploadPathProvider = uploadPathProvider;
         }
 
         // GET: SupplyItem
@@ -475,8 +475,7 @@ namespace ResourceSharingPlatform.Controllers
 
         private async Task<string> SaveImageAsync(IFormFile file)
         {
-            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "items");
-            Directory.CreateDirectory(uploadsFolder);
+            var uploadsFolder = _uploadPathProvider.GetSubfolder("items");
 
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
             var fileName = Guid.NewGuid().ToString("N") + ext;
@@ -499,7 +498,7 @@ namespace ResourceSharingPlatform.Controllers
 
             try
             {
-                var fullPath = Path.Combine(_environment.WebRootPath, relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                var fullPath = _uploadPathProvider.ResolveRelativePath(relativePath);
                 if (System.IO.File.Exists(fullPath))
                 {
                     System.IO.File.Delete(fullPath);

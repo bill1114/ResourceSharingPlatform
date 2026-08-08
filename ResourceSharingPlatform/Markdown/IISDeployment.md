@@ -24,7 +24,16 @@ Import-Module WebAdministration
 Restart-WebAppPool -Name ResourceSharingPlatformPool
 ```
 
-`dotnet publish` 只會覆蓋程式檔案，不會刪除 `wwwroot\uploads` 底下既有的上傳圖片。
+`dotnet publish` 只會覆蓋程式檔案，不會動到圖片（圖片現在存在 wwwroot 之外，見下）。
+
+## 圖片統一存放位置
+
+原本開發用（Kestrel）跟 IIS 各有一份 `wwwroot\uploads`，兩邊上傳的圖片互相看不到、`dotnet publish` 也不會同步。現在改成兩邊都讀寫同一個外部資料夾：
+
+- 實體路徑：`D:\ResourceSharingPlatform0807\SharedUploads\`（`items\` 一般物資圖片、`ai-stockin\` AI 智慧入庫照片）
+- 由 `appsettings.json` 的 `"UploadsRoot"` 設定指定，`Services/UploadPathProvider.cs` 讀取；`Program.cs` 額外掛一個指到這個資料夾的 `/uploads` 靜態檔案中介軟體
+- 如果 `UploadsRoot` 沒設定，會自動退回原本的 `wwwroot/uploads`（相容性保底）
+- 這個資料夾在 `dotnet publish` 的輸出範圍之外，不會被覆蓋或清掉
 
 ## 注意事項
 

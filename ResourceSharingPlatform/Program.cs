@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using ResourceSharingPlatform.Data;
 using ResourceSharingPlatform.Models;
 using ResourceSharingPlatform.Services;
@@ -35,6 +36,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Add Services
+builder.Services.AddSingleton<UploadPathProvider>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<SupplyTransferService>();
 builder.Services.AddScoped<SupplyOutboundService>();
@@ -52,6 +54,17 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Serve uploaded files from the shared UploadPathProvider location (see its comment for
+// why this isn't just wwwroot/uploads) before the default wwwroot static files, so a file
+// found there always wins even if a stale copy still exists under wwwroot from before this
+// was introduced.
+var uploadPathProvider = app.Services.GetRequiredService<UploadPathProvider>();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadPathProvider.Root),
+    RequestPath = "/uploads"
+});
 app.UseStaticFiles();
 
 app.UseRouting();

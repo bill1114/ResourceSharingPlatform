@@ -8,15 +8,15 @@ namespace ResourceSharingPlatform.Services
     public class AIStockInService
     {
         private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _environment;
+        private readonly UploadPathProvider _uploadPathProvider;
 
         private static readonly string[] AllowedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
         private const long MaxImageSizeBytes = 5 * 1024 * 1024;
 
-        public AIStockInService(ApplicationDbContext context, IWebHostEnvironment environment)
+        public AIStockInService(ApplicationDbContext context, UploadPathProvider uploadPathProvider)
         {
             _context = context;
-            _environment = environment;
+            _uploadPathProvider = uploadPathProvider;
         }
 
         public bool TryValidateImage(IFormFile file, out string? error)
@@ -78,8 +78,7 @@ namespace ResourceSharingPlatform.Services
 
         private async Task<string> SaveImageAsync(IFormFile file)
         {
-            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "ai-stockin");
-            Directory.CreateDirectory(uploadsFolder);
+            var uploadsFolder = _uploadPathProvider.GetSubfolder("ai-stockin");
 
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
             var fileName = Guid.NewGuid().ToString("N") + ext;

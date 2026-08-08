@@ -13,6 +13,15 @@
         x.InventoryItemDefinitionId,
         x.SafetyStock
     }));
+    var variantsJson = JsonSerializer.Serialize(inventoryItemVariants.Select(v => new
+    {
+        VariantId = v.Id,
+        DefinitionId = v.InventoryItemDefinition!.Id,
+        v.InventoryItemDefinition!.Category,
+        v.InventoryItemDefinition!.ItemName,
+        v.Specification,
+        v.InventoryItemDefinition!.Unit
+    }));
 }
 
 <div class="container mt-4">
@@ -39,55 +48,42 @@
                         </div>
 
                         <h6 class="text-muted text-uppercase mt-4">基本資料</h6>
-                        <div class="mb-3">
-                            <label for="inventoryItemVariantId" class="form-label">庫存種類與規格 <span class="text-danger">*</span></label>
-                            <select id="inventoryItemVariantId" name="inventoryItemVariantId" class="form-select" required>
-                                <option value="">請選擇預設物資與規格</option>
-                                @foreach (var variant in inventoryItemVariants)
-                                {
-                                    var definition = variant.InventoryItemDefinition!;
-                                    <option value="@variant.Id"
-                                            data-definition-id="@definition.Id"
-                                            data-category="@definition.Category"
-                                            data-item-name="@definition.ItemName"
-                                            data-specification="@variant.Specification"
-                                            data-unit="@definition.Unit"
-                                            selected="@(selectedInventoryItemVariantId == variant.Id ? "selected" : null)">
-                                        @definition.DisplayName｜@variant.DisplayName
-                                    </option>
-                                }
-                            </select>
-                            <span class="text-danger field-validation-valid" data-valmsg-for="inventoryItemVariantId" data-valmsg-replace="true"></span>
-                            <div class="form-text">選擇後會自動帶入物資種類、名稱、規格與最小單位。</div>
-                            @if (!inventoryItemVariants.Any())
-                            {
-                                <div class="alert alert-warning mt-2 mb-0">
-                                    尚未建立可用的庫存種類設定，請聯絡管理員先至「系統管理 → 庫存種類設定」建立資料。
-                                </div>
-                            }
-                        </div>
+                        @if (!inventoryItemVariants.Any())
+                        {
+                            <div class="alert alert-warning">
+                                尚未建立可用的庫存種類設定，請聯絡管理員先至「系統管理 → 庫存種類設定」建立資料。
+                            </div>
+                        }
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label asp-for="Category" class="form-label">物資種類 <span class="text-danger">*</span></label>
-                                    <input asp-for="Category" class="form-control" readonly />
-                                    <span asp-validation-for="Category" class="text-danger"></span>
+                                    <label for="categorySelect" class="form-label">物資種類 <span class="text-danger">*</span></label>
+                                    <select id="categorySelect" class="form-select">
+                                        <option value="">請選擇物資種類</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label asp-for="ItemName" class="form-label">物資名稱 <span class="text-danger">*</span></label>
-                                    <input asp-for="ItemName" class="form-control" readonly />
-                                    <span asp-validation-for="ItemName" class="text-danger"></span>
+                                    <label for="itemNameSelect" class="form-label">物資名稱 <span class="text-danger">*</span></label>
+                                    <select id="itemNameSelect" class="form-select" disabled>
+                                        <option value="">請先選擇物資種類</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="specificationSelect" class="form-label">規格</label>
+                                    <select id="specificationSelect" class="form-select" disabled>
+                                        <option value="">請先選擇物資名稱</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Specification" class="form-label">規格</label>
-                            <input asp-for="Specification" class="form-control" readonly />
-                            <span asp-validation-for="Specification" class="text-danger"></span>
-                        </div>
+                        <input type="hidden" id="inventoryItemVariantId" name="inventoryItemVariantId" required />
+                        <span class="text-danger field-validation-valid" data-valmsg-for="inventoryItemVariantId" data-valmsg-replace="true"></span>
+                        <div id="variantSelectError" class="text-danger small mb-3" style="display:none;">請依序選擇物資種類、物資名稱與規格。</div>
+                        <div class="form-text mb-3">三個下拉選單彼此連動：選了物資種類才能選物資名稱，選了物資名稱才能選規格；選定後會自動帶入最小單位與安全庫存。</div>
 
                         <h6 class="text-muted text-uppercase mt-4">庫存與效期</h6>
                         <div class="row">
@@ -179,28 +175,115 @@
     <script>
         (function () {
             var wrap = document.getElementById('expirationWrap');
-            var input = document.getElementById('ExpirationDate');
-            var presetSelect = document.getElementById('inventoryItemVariantId');
+            var expirationInput = document.getElementById('ExpirationDate');
             var locationSelect = document.getElementById('LocationId');
             var locationSafetyStocks = @Html.Raw(locationSafetyJson);
+            // Flat list of every active variant, each carrying its parent definition's
+            // Category/ItemName/Unit. The three selects below are just progressively
+            // narrower views over this one array - Category picks a subset, ItemName
+            // narrows it further, Specification (the actual InventoryItemVariant rows)
+            // is what's left, so their relationship to each other always stays intact.
+            var variants = @Html.Raw(variantsJson);
 
-            function applyLocationSafety() {
-                var option = presetSelect.options[presetSelect.selectedIndex];
-                var definitionId = Number(option.dataset.definitionId || 0);
-                var locationId = Number(locationSelect.value || 0);
-                var setting = locationSafetyStocks.find(function (x) {
-                    return x.LocationId === locationId && x.InventoryItemDefinitionId === definitionId;
+            var categorySelect = document.getElementById('categorySelect');
+            var itemNameSelect = document.getElementById('itemNameSelect');
+            var specificationSelect = document.getElementById('specificationSelect');
+            var hiddenVariantId = document.getElementById('inventoryItemVariantId');
+            var unitInput = document.getElementById('Unit');
+            var safetyStockInput = document.getElementById('SafetyStock');
+            var variantError = document.getElementById('variantSelectError');
+
+            function uniqueValues(list, keyFn) {
+                var seen = {};
+                var result = [];
+                list.forEach(function (item) {
+                    var key = keyFn(item);
+                    if (!seen[key]) {
+                        seen[key] = true;
+                        result.push(item);
+                    }
                 });
-                document.getElementById('SafetyStock').value = setting ? setting.SafetyStock : 0;
+                return result;
             }
 
-            function applyPreset() {
-                var option = presetSelect.options[presetSelect.selectedIndex];
-                document.getElementById('Category').value = option.dataset.category || '';
-                document.getElementById('ItemName').value = option.dataset.itemName || '';
-                document.getElementById('Specification').value = option.dataset.specification || '';
-                document.getElementById('Unit').value = option.dataset.unit || '';
-                applyLocationSafety();
+            function fillSelect(select, items, valueFn, textFn, placeholder) {
+                select.innerHTML = '';
+                var placeholderOption = document.createElement('option');
+                placeholderOption.value = '';
+                placeholderOption.textContent = placeholder;
+                select.appendChild(placeholderOption);
+                items.forEach(function (item) {
+                    var option = document.createElement('option');
+                    option.value = valueFn(item);
+                    option.textContent = textFn(item);
+                    select.appendChild(option);
+                });
+            }
+
+            function populateCategories(preselectCategory) {
+                var categories = uniqueValues(variants, function (v) { return v.Category; });
+                fillSelect(categorySelect, categories, function (v) { return v.Category; }, function (v) { return v.Category; }, '請選擇物資種類');
+                if (preselectCategory) {
+                    categorySelect.value = preselectCategory;
+                }
+            }
+
+            function populateItemNames(preselectItemName) {
+                var category = categorySelect.value;
+                itemNameSelect.disabled = !category;
+                if (!category) {
+                    fillSelect(itemNameSelect, [], function () {}, function () {}, '請先選擇物資種類');
+                    populateSpecifications();
+                    return;
+                }
+                var names = uniqueValues(
+                    variants.filter(function (v) { return v.Category === category; }),
+                    function (v) { return v.ItemName; }
+                );
+                fillSelect(itemNameSelect, names, function (v) { return v.ItemName; }, function (v) { return v.ItemName; }, '請選擇物資名稱');
+                if (preselectItemName) {
+                    itemNameSelect.value = preselectItemName;
+                }
+                populateSpecifications();
+            }
+
+            function populateSpecifications(preselectVariantId) {
+                var category = categorySelect.value;
+                var itemName = itemNameSelect.value;
+                specificationSelect.disabled = !(category && itemName);
+                if (!category || !itemName) {
+                    fillSelect(specificationSelect, [], function () {}, function () {}, '請先選擇物資名稱');
+                    resolveVariant();
+                    return;
+                }
+                var matches = variants.filter(function (v) { return v.Category === category && v.ItemName === itemName; });
+                fillSelect(specificationSelect, matches, function (v) { return v.VariantId; }, function (v) { return v.Specification || '無規格'; }, '請選擇規格');
+                if (preselectVariantId) {
+                    specificationSelect.value = preselectVariantId;
+                } else if (matches.length === 1) {
+                    // Only one specification for this item - no real choice to make, so
+                    // just resolve it instead of making the user click a one-option dropdown.
+                    specificationSelect.value = matches[0].VariantId;
+                }
+                resolveVariant();
+            }
+
+            function resolveVariant() {
+                var variantId = specificationSelect.value;
+                var variant = variants.find(function (v) { return String(v.VariantId) === String(variantId); });
+                hiddenVariantId.value = variant ? variant.VariantId : '';
+                unitInput.value = variant ? variant.Unit : '';
+                variantError.style.display = 'none';
+                applyLocationSafety(variant ? variant.DefinitionId : null);
+            }
+
+            function applyLocationSafety(definitionId) {
+                var locationId = Number(locationSelect.value || 0);
+                var defId = Number(definitionId || 0);
+                var setting = locationSafetyStocks.find(function (x) {
+                    return x.LocationId === locationId && x.InventoryItemDefinitionId === defId;
+                });
+                safetyStockInput.value = setting ? setting.SafetyStock : 0;
             }
 
             function update() {
@@ -208,21 +291,40 @@
                 var val = checked ? checked.value : '@StockTypes.HasExpiry';
                 if (val === '@StockTypes.NoExpiry') {
                     wrap.style.display = 'none';
-                    input.required = false;
+                    expirationInput.required = false;
                 } else {
                     wrap.style.display = '';
-                    input.required = true;
+                    expirationInput.required = true;
                 }
             }
 
             document.querySelectorAll('input[name="StockType"]').forEach(function (r) {
                 r.addEventListener('change', update);
             });
-            presetSelect.addEventListener('change', applyPreset);
-            locationSelect.addEventListener('change', applyLocationSafety);
-            if (presetSelect.value) {
-                applyPreset();
-            }
+            categorySelect.addEventListener('change', function () { populateItemNames(); });
+            itemNameSelect.addEventListener('change', function () { populateSpecifications(); });
+            specificationSelect.addEventListener('change', resolveVariant);
+            locationSelect.addEventListener('change', function () {
+                var variant = variants.find(function (v) { return String(v.VariantId) === String(specificationSelect.value); });
+                applyLocationSafety(variant ? variant.DefinitionId : null);
+            });
+
+            document.querySelector('form').addEventListener('submit', function (e) {
+                if (!hiddenVariantId.value) {
+                    e.preventDefault();
+                    variantError.style.display = '';
+                    categorySelect.focus();
+                }
+            });
+
+            // Restore the previous selection (Category/ItemName/Specification) after a
+            // failed submit, so the user doesn't have to re-pick everything from scratch.
+            var selectedVariantId = @(selectedInventoryItemVariantId.HasValue ? selectedInventoryItemVariantId.Value.ToString() : "null");
+            var selectedVariant = selectedVariantId ? variants.find(function (v) { return v.VariantId === selectedVariantId; }) : null;
+
+            populateCategories(selectedVariant ? selectedVariant.Category : null);
+            populateItemNames(selectedVariant ? selectedVariant.ItemName : null);
+            populateSpecifications(selectedVariant ? selectedVariant.VariantId : null);
             update();
         })();
     </script>
