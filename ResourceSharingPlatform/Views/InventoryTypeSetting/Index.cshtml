@@ -32,7 +32,7 @@
                     <td class="text-nowrap">
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">編輯</a>
                         <a asp-action="Variants" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">規格</a>
-                        <a asp-action="LocationSafety" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">據點門檻</a>
+                        <a asp-action="LocationSafety" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">據點門檻</a>
                         @if (item.IsActive) { <form asp-action="Disable" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('確定停用嗎？');"><button class="btn btn-sm btn-outline-danger">停用</button></form> }
                     </td></tr>
             }

@@ -61,7 +61,7 @@
                                 <td>@ex.ExpirationDate?.ToString("yyyy-MM-dd")</td>
                                 <td><span class="badge @ex.GetStatusBadgeClass()">@ex.GetStatus()</span></td>
                                 <td>
-                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" asp-route-locationId="@ex.LocationId" class="btn btn-sm btn-outline-warning">選擇報廢</a>
+                                    <a asp-action="Create" asp-route-supplyItemId="@ex.Id" asp-route-locationId="@ex.LocationId" class="btn btn-sm btn-outline-primary">選擇報廢</a>
                                 </td>
                             </tr>
                         }

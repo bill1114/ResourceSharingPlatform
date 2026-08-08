@@ -20,3 +20,12 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* Bootstrap's default .badge text (0.75em) reads too small against the
+   colored backgrounds used throughout this app (據點/種類/狀態 badges etc.).
+   Bump size and padding globally instead of touching every view. */
+.badge {
+  font-size: 0.9rem;
+  padding: 0.4em 0.65em;
+  font-weight: 600;
+}
