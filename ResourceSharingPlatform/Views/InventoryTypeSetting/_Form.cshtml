@@ -1,6 +1,19 @@
 @model ResourceSharingPlatform.Models.ViewModels.InventoryDefinitionFormViewModel
+@using ResourceSharingPlatform.Models
 
 <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<div class="mb-3">
+    <label class="form-label">庫存分類 <span class="text-danger">*</span></label>
+    <div class="btn-group w-100" role="group">
+        @foreach (var st in StockTypes.All)
+        {
+            <input type="radio" class="btn-check" name="StockType" id="stockType_@st" value="@st" autocomplete="off" checked="@(Model.StockType == st)">
+            <label class="btn btn-outline-primary" for="stockType_@st">@StockTypes.ToDisplayName(st)</label>
+        }
+    </div>
+    <div class="form-text">跟「新增物資」頁面的分類一致；新增物資時會依這裡設定的分類篩選可選的物資種類/名稱/規格。</div>
+    <span asp-validation-for="StockType" class="text-danger"></span>
+</div>
 <div class="row">
     <div class="col-md-6 mb-3">
         <label asp-for="Category" class="form-label">物資種類 <span class="text-danger">*</span></label>

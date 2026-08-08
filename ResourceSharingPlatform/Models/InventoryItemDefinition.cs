@@ -21,6 +21,10 @@ namespace ResourceSharingPlatform.Models
         [Range(0, int.MaxValue, ErrorMessage = "總量安全庫存不可小於 0")]
         public int GlobalSafetyStock { get; set; }
 
+        [Required(ErrorMessage = "請選擇庫存分類")]
+        [StringLength(20)]
+        public string StockType { get; set; } = StockTypes.HasExpiry;
+
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }

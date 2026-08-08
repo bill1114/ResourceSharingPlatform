@@ -191,6 +191,40 @@ namespace ResourceSharingPlatform.Data
                 """);
         }
 
+        // Adds StockType (無效期物資/有效期物資/冷凍食品) to InventoryItemDefinition so 新增物資's
+        // 物資種類/物資名稱/規格 dropdowns can be filtered by the StockType radio the same way
+        // SupplyItem rows already are. Existing definitions get a best-guess StockType derived
+        // from their SupplyItem rows' actual StockType (majority vote); that guess keeps
+        // re-applying on every startup only until an admin edits the definition via the
+        // 庫存種類設定 UI (InventoryTypeSettingController.Edit sets UpdatedAt), after which their
+        // choice sticks and is never silently overwritten again.
+        public static async Task EnsureInventoryItemDefinitionStockTypeAsync(IServiceProvider services)
+        {
+            using var scope = services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            await context.Database.ExecuteSqlRawAsync("""
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('InventoryItemDefinition') AND name = 'StockType')
+                BEGIN
+                    ALTER TABLE InventoryItemDefinition ADD StockType NVARCHAR(20) NOT NULL DEFAULT 'HasExpiry';
+                END;
+                """);
+
+            await context.Database.ExecuteSqlRawAsync("""
+                UPDATE d
+                SET StockType = ranked.StockType
+                FROM InventoryItemDefinition d
+                CROSS APPLY (
+                    SELECT TOP 1 si.StockType
+                    FROM SupplyItem si
+                    WHERE si.Category = d.Category AND si.ItemName = d.ItemName AND si.IsActive = 1
+                    GROUP BY si.StockType
+                    ORDER BY COUNT(*) DESC
+                ) ranked
+                WHERE d.UpdatedAt IS NULL;
+                """);
+        }
+
         // Deployments that never populated the legacy InventoryTypeSetting table (e.g. this one -
         // the InventoryTypeSetting/Definition feature was developed on another machine against a
         // different database) get no InventoryItemDefinition rows out of

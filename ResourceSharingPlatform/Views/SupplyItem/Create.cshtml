@@ -20,7 +20,8 @@
         v.InventoryItemDefinition!.Category,
         v.InventoryItemDefinition!.ItemName,
         v.Specification,
-        v.InventoryItemDefinition!.Unit
+        v.InventoryItemDefinition!.Unit,
+        v.InventoryItemDefinition!.StockType
     }));
 }
 
@@ -83,7 +84,7 @@
                         <input type="hidden" id="inventoryItemVariantId" name="inventoryItemVariantId" required />
                         <span class="text-danger field-validation-valid" data-valmsg-for="inventoryItemVariantId" data-valmsg-replace="true"></span>
                         <div id="variantSelectError" class="text-danger small mb-3" style="display:none;">請依序選擇物資種類、物資名稱與規格。</div>
-                        <div class="form-text mb-3">三個下拉選單彼此連動：選了物資種類才能選物資名稱，選了物資名稱才能選規格；選定後會自動帶入最小單位與安全庫存。</div>
+                        <div class="form-text mb-3">下拉選單只會顯示符合上方「分類」的物資；選了物資種類才能選物資名稱，選了物資名稱才能選規格；選定後會自動帶入最小單位與安全庫存。切換上方分類會清空這裡已選的內容，因為可選的物資會跟著改變。</div>
 
                         <h6 class="text-muted text-uppercase mt-4">庫存與效期</h6>
                         <div class="row">
@@ -220,8 +221,18 @@
                 });
             }
 
+            function currentStockType() {
+                var checked = document.querySelector('input[name="StockType"]:checked');
+                return checked ? checked.value : '@StockTypes.HasExpiry';
+            }
+
+            function variantsForCurrentStockType() {
+                var stockType = currentStockType();
+                return variants.filter(function (v) { return v.StockType === stockType; });
+            }
+
             function populateCategories(preselectCategory) {
-                var categories = uniqueValues(variants, function (v) { return v.Category; });
+                var categories = uniqueValues(variantsForCurrentStockType(), function (v) { return v.Category; });
                 fillSelect(categorySelect, categories, function (v) { return v.Category; }, function (v) { return v.Category; }, '請選擇物資種類');
                 if (preselectCategory) {
                     categorySelect.value = preselectCategory;
@@ -237,7 +248,7 @@
                     return;
                 }
                 var names = uniqueValues(
-                    variants.filter(function (v) { return v.Category === category; }),
+                    variantsForCurrentStockType().filter(function (v) { return v.Category === category; }),
                     function (v) { return v.ItemName; }
                 );
                 fillSelect(itemNameSelect, names, function (v) { return v.ItemName; }, function (v) { return v.ItemName; }, '請選擇物資名稱');
@@ -256,7 +267,7 @@
                     resolveVariant();
                     return;
                 }
-                var matches = variants.filter(function (v) { return v.Category === category && v.ItemName === itemName; });
+                var matches = variantsForCurrentStockType().filter(function (v) { return v.Category === category && v.ItemName === itemName; });
                 fillSelect(specificationSelect, matches, function (v) { return v.VariantId; }, function (v) { return v.Specification || '無規格'; }, '請選擇規格');
                 if (preselectVariantId) {
                     specificationSelect.value = preselectVariantId;
@@ -287,8 +298,7 @@
             }
 
             function update() {
-                var checked = document.querySelector('input[name="StockType"]:checked');
-                var val = checked ? checked.value : '@StockTypes.HasExpiry';
+                var val = currentStockType();
                 if (val === '@StockTypes.NoExpiry') {
                     wrap.style.display = 'none';
                     expirationInput.required = false;
@@ -298,8 +308,17 @@
                 }
             }
 
+            function onStockTypeChanged() {
+                update();
+                // The set of valid 物資種類/名稱/規格 depends on which 分類 is selected, so
+                // whatever was already picked there may no longer be valid - clear it and
+                // rebuild the category list from scratch for the newly selected 分類.
+                populateCategories();
+                populateItemNames();
+            }
+
             document.querySelectorAll('input[name="StockType"]').forEach(function (r) {
-                r.addEventListener('change', update);
+                r.addEventListener('change', onStockTypeChanged);
             });
             categorySelect.addEventListener('change', function () { populateItemNames(); });
             itemNameSelect.addEventListener('change', function () { populateSpecifications(); });
@@ -317,10 +336,16 @@
                 }
             });
 
-            // Restore the previous selection (Category/ItemName/Specification) after a
-            // failed submit, so the user doesn't have to re-pick everything from scratch.
+            // Restore the previous selection (StockType/Category/ItemName/Specification)
+            // after a failed submit, so the user doesn't have to re-pick everything from
+            // scratch. The StockType radio has to be restored first since it determines
+            // which categories/items/specs are even offered.
             var selectedVariantId = @(selectedInventoryItemVariantId.HasValue ? selectedInventoryItemVariantId.Value.ToString() : "null");
             var selectedVariant = selectedVariantId ? variants.find(function (v) { return v.VariantId === selectedVariantId; }) : null;
+            if (selectedVariant) {
+                var radio = document.querySelector('input[name="StockType"][value="' + selectedVariant.StockType + '"]');
+                if (radio) { radio.checked = true; }
+            }
 
             populateCategories(selectedVariant ? selectedVariant.Category : null);
             populateItemNames(selectedVariant ? selectedVariant.ItemName : null);

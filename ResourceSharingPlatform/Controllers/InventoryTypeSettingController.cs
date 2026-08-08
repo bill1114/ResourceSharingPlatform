@@ -53,6 +53,7 @@ namespace ResourceSharingPlatform.Controllers
                 ItemName = model.ItemName,
                 Unit = model.Unit,
                 GlobalSafetyStock = model.GlobalSafetyStock,
+                StockType = model.StockType,
                 IsActive = true,
                 CreatedAt = DateTime.Now
             };
@@ -83,6 +84,7 @@ namespace ResourceSharingPlatform.Controllers
                 ItemName = definition.ItemName,
                 Unit = definition.Unit,
                 GlobalSafetyStock = definition.GlobalSafetyStock,
+                StockType = definition.StockType,
                 IsActive = definition.IsActive
             });
         }
@@ -103,6 +105,7 @@ namespace ResourceSharingPlatform.Controllers
             definition.ItemName = model.ItemName;
             definition.Unit = model.Unit;
             definition.GlobalSafetyStock = model.GlobalSafetyStock;
+            definition.StockType = model.StockType;
             definition.IsActive = model.IsActive;
             definition.UpdatedAt = DateTime.Now;
             await _context.SaveChangesAsync();

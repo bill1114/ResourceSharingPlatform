@@ -45,10 +45,12 @@ BEGIN
         ItemName NVARCHAR(100) NOT NULL,
         Unit NVARCHAR(20) NOT NULL,
         GlobalSafetyStock INT NOT NULL CONSTRAINT DF_InventoryItemDefinition_GlobalSafetyStock DEFAULT 0,
+        StockType NVARCHAR(20) NOT NULL CONSTRAINT DF_InventoryItemDefinition_StockType DEFAULT N'HasExpiry',
         IsActive BIT NOT NULL CONSTRAINT DF_InventoryItemDefinition_IsActive DEFAULT 1,
         CreatedAt DATETIME NOT NULL CONSTRAINT DF_InventoryItemDefinition_CreatedAt DEFAULT GETDATE(),
         UpdatedAt DATETIME NULL,
-        CONSTRAINT CK_InventoryItemDefinition_GlobalSafetyStock CHECK (GlobalSafetyStock >= 0)
+        CONSTRAINT CK_InventoryItemDefinition_GlobalSafetyStock CHECK (GlobalSafetyStock >= 0),
+        CONSTRAINT CK_InventoryItemDefinition_StockType CHECK (StockType IN (N'NoExpiry', N'HasExpiry', N'Frozen'))
     );
 END
 GO

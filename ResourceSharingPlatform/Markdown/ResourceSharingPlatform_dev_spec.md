@@ -54,9 +54,12 @@ Browser
 
 - 最小計算單位 `Unit`
 - 全系統安全庫存 `GlobalSafetyStock`
+- 庫存分類 `StockType`（`NoExpiry`／`HasExpiry`／`Frozen`，跟 `SupplyItem.StockType` 同一組常數）
 - 啟用狀態
 
 啟用中的種類與名稱不可重複。
+
+`StockType` 由「系統管理 → 庫存種類設定」的編輯頁面維護，「新增物資」頁面的物資種類/名稱/規格三個下拉選單會依目前選取的分類（無效期物資/有效期物資/冷凍食品）篩選，切換分類時已選的內容會清空重選，因為可選範圍改變了。既有資料庫升級時，`StockType` 會依該物資底下 `SupplyItem` 實際使用最多次的分類自動帶入一次；一旦透過編輯頁面手動存過檔（`UpdatedAt` 不為 NULL），之後開機就不會再自動覆蓋。
 
 ### 5.2 規格
 

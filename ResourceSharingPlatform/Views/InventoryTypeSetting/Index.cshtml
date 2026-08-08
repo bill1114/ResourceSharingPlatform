@@ -17,13 +17,15 @@
     </div></div>
     <div class="card shadow-sm"><div class="card-body"><div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead class="table-light"><tr><th>物資種類</th><th>物資名稱</th><th>最小單位</th>
+            <thead class="table-light"><tr><th>物資種類</th><th>物資名稱</th><th>庫存分類</th><th>最小單位</th>
                 <th>規格數</th><th>總量安全庫存</th><th>據點門檻</th><th>狀態</th><th>操作</th></tr></thead>
             <tbody>
-            @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-4">尚未建立庫存種類</td></tr> }
+            @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">尚未建立庫存種類</td></tr> }
             @foreach (var item in Model)
             {
-                <tr><td>@item.Category</td><td><strong>@item.ItemName</strong></td><td>@item.Unit</td>
+                <tr><td>@item.Category</td><td><strong>@item.ItemName</strong></td>
+                    <td><span class="badge @ResourceSharingPlatform.Models.StockTypes.ToBadgeClass(item.StockType)">@ResourceSharingPlatform.Models.StockTypes.ToDisplayName(item.StockType)</span></td>
+                    <td>@item.Unit</td>
                     <td>@item.Variants.Count(x => x.IsActive)</td><td>@item.GlobalSafetyStock @item.Unit</td>
                     <td>@item.LocationSafetyStocks.Count 筆</td>
                     <td><span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "啟用" : "停用")</span></td>
