@@ -1,6 +1,7 @@
 @model ResourceSharingPlatform.Models.ViewModels.OutboundViewModel
 @using ResourceSharingPlatform.Models
 @using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Text.Json
 
 @{
     ViewData["Title"] = "物資出庫";
@@ -10,17 +11,38 @@
     var lockedLocationName = lockedLocationId.HasValue
         ? ((SelectList)ViewBag.Locations).FirstOrDefault(x => x.Value == lockedLocationId.Value.ToString())?.Text
         : null;
-}
 
-@functions {
-    string ItemOptionText(SupplyItem opt)
+    string StockTypeBtnClass(string stockType) => stockType switch
+    {
+        StockTypes.NoExpiry => "btn-outline-primary",
+        StockTypes.HasExpiry => "btn-outline-success",
+        StockTypes.Frozen => "btn-outline-info",
+        _ => "btn-outline-secondary"
+    };
+
+    var itemsJson = JsonSerializer.Serialize(itemOptions.Select(opt =>
     {
         var today = DateTime.Today;
-        var text = opt.ItemName + " (" + (opt.Location?.LocationName ?? "") + ") - 現有 " + opt.Quantity + " " + opt.Unit;
-        if (opt.ExpirationDate.HasValue && opt.ExpirationDate.Value < today) text += " ⚠已過期";
-        else if (opt.ExpirationDate.HasValue && opt.ExpirationDate.Value <= today.AddDays(30)) text += " ⚠即將過期";
-        return text;
-    }
+        var warning = opt.ExpirationDate.HasValue && opt.ExpirationDate.Value < today
+            ? "已過期"
+            : opt.ExpirationDate.HasValue && opt.ExpirationDate.Value <= today.AddDays(30)
+                ? "即將過期"
+                : null;
+        return new
+        {
+            Id = opt.Id,
+            opt.Category,
+            opt.ItemName,
+            opt.Specification,
+            opt.Unit,
+            opt.Quantity,
+            opt.LocationId,
+            opt.StockType,
+            opt.ImagePath,
+            ExpirationDate = opt.ExpirationDate.HasValue ? opt.ExpirationDate.Value.ToString("yyyy-MM-dd") : null,
+            Warning = warning
+        };
+    }));
 }
 
 <div class="container mt-4">
@@ -99,27 +121,54 @@
                             <label class="form-label">分類</label>
                             <div class="btn-group w-100" role="group" id="stockTypeFilter">
                                 <input type="radio" class="btn-check" name="stockTypeFilter" id="filterAll" value="" checked autocomplete="off">
-                                <label class="btn btn-outline-dark" for="filterAll">全部</label>
+                                <label class="btn btn-outline-secondary" for="filterAll">全部</label>
                                 @foreach (var st in StockTypes.All)
                                 {
                                     <input type="radio" class="btn-check" name="stockTypeFilter" id="filter_@st" value="@st" autocomplete="off">
-                                    <label class="btn btn-outline-dark" for="filter_@st">@StockTypes.ToDisplayName(st)</label>
+                                    <label class="btn @StockTypeBtnClass(st)" for="filter_@st">@StockTypes.ToDisplayName(st)</label>
                                 }
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="SupplyItemId" class="form-label">選擇物資 <span class="text-danger">*</span></label>
-                            <select asp-for="SupplyItemId" id="itemSelect" class="form-select">
-                                <option value="">請選擇物資</option>
-                                @foreach (var opt in itemOptions)
-                                {
-                                    <option value="@opt.Id" data-location-id="@opt.LocationId" data-stock-type="@opt.StockType" selected="@(opt.Id == Model.SupplyItemId)">@ItemOptionText(opt)</option>
-                                }
-                            </select>
-                            <span asp-validation-for="SupplyItemId" class="text-danger"></span>
-                            <div class="form-text">依有效期限由近到遠排序，即期／已過期物資已加註提醒。</div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="categorySelect" class="form-label">物資種類 <span class="text-danger">*</span></label>
+                                    <select id="categorySelect" class="form-select">
+                                        <option value="">請選擇物資種類</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="itemNameSelect" class="form-label">物資名稱 <span class="text-danger">*</span></label>
+                                    <select id="itemNameSelect" class="form-select" disabled>
+                                        <option value="">請先選擇物資種類</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="specificationSelect" class="form-label">規格／批次 <span class="text-danger">*</span></label>
+                                    <select id="specificationSelect" class="form-select" disabled>
+                                        <option value="">請先選擇物資名稱</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
+                        <input type="hidden" asp-for="SupplyItemId" id="SupplyItemId" />
+                        <span asp-validation-for="SupplyItemId" class="text-danger"></span>
+                        <div id="itemSelectError" class="text-danger small mb-2" style="display:none;">請依序選擇據點、分類、物資種類、物資名稱與規格。</div>
+
+                        <div class="mb-3 d-flex align-items-center gap-3" id="itemPreview" style="display:none;">
+                            <img id="itemPreviewImg" src="" alt="物資照片" style="width:64px;height:64px;object-fit:cover;display:none;" class="rounded border" />
+                            <i id="itemPreviewNoImg" class="bi bi-image text-muted" style="font-size:2rem;display:none;"></i>
+                            <div>
+                                <div id="itemPreviewText" class="fw-semibold"></div>
+                                <div id="itemPreviewWarning" class="text-danger small"></div>
+                            </div>
+                        </div>
+                        <div class="form-text mb-3">下拉選單只會顯示所選據點與分類下的物資；選了物資種類才能選物資名稱，選了物資名稱才能選規格／批次；切換據點或分類會清空已選內容。依有效期限由近到遠排序，即期／已過期物資已加註提醒。</div>
 
                         <div class="mb-3">
                             <label asp-for="OutboundQuantity" class="form-label">出庫數量 <span class="text-danger">*</span></label>
@@ -197,42 +246,180 @@
     <script>
         (function () {
             var locationInput = document.getElementById('LocationId');
-            var itemSelect = document.getElementById('itemSelect');
+            var categorySelect = document.getElementById('categorySelect');
+            var itemNameSelect = document.getElementById('itemNameSelect');
+            var specificationSelect = document.getElementById('specificationSelect');
+            var hiddenItemId = document.getElementById('SupplyItemId');
+            var itemError = document.getElementById('itemSelectError');
+            var preview = document.getElementById('itemPreview');
+            var previewImg = document.getElementById('itemPreviewImg');
+            var previewNoImg = document.getElementById('itemPreviewNoImg');
+            var previewText = document.getElementById('itemPreviewText');
+            var previewWarning = document.getElementById('itemPreviewWarning');
             var stockTypeInputs = document.querySelectorAll('input[name="stockTypeFilter"]');
+
+            // Every active SupplyItem row (already scoped to what this user is allowed to
+            // issue from). 據點 and 分類 narrow this down first, then the three cascading
+            // selects (物資種類/物資名稱/規格) narrow it further, same pattern as 新增物資 -
+            // except the final "規格" level here resolves straight to a concrete SupplyItem
+            // (batch/expiry included in its label) instead of a catalog variant, since outbound
+            // has to act on one specific stock row.
+            var items = @Html.Raw(itemsJson);
+
+            function currentLocationId() {
+                return locationInput ? locationInput.value : '';
+            }
 
             function currentStockType() {
                 var checked = document.querySelector('input[name="stockTypeFilter"]:checked');
                 return checked ? checked.value : '';
             }
 
-            function filterItems() {
-                var locVal = locationInput ? locationInput.value : '';
+            function candidateItems() {
+                var locVal = currentLocationId();
                 var stockVal = currentStockType();
-                var currentValid = false;
+                return items.filter(function (it) {
+                    return (!locVal || String(it.LocationId) === String(locVal)) &&
+                        (!stockVal || it.StockType === stockVal);
+                });
+            }
 
-                itemSelect.querySelectorAll('option[data-location-id]').forEach(function (opt) {
-                    var matchesLocation = !locVal || opt.getAttribute('data-location-id') === locVal;
-                    var matchesStock = !stockVal || opt.getAttribute('data-stock-type') === stockVal;
-                    var show = matchesLocation && matchesStock;
-                    opt.style.display = show ? '' : 'none';
-                    if (show && opt.value === itemSelect.value) {
-                        currentValid = true;
+            function uniqueValues(list, keyFn) {
+                var seen = {};
+                var result = [];
+                list.forEach(function (item) {
+                    var key = keyFn(item);
+                    if (!seen[key]) {
+                        seen[key] = true;
+                        result.push(item);
                     }
                 });
+                return result;
+            }
 
-                if (!currentValid) {
-                    itemSelect.value = '';
+            function fillSelect(select, list, valueFn, textFn, placeholder) {
+                select.innerHTML = '';
+                var placeholderOption = document.createElement('option');
+                placeholderOption.value = '';
+                placeholderOption.textContent = placeholder;
+                select.appendChild(placeholderOption);
+                list.forEach(function (item) {
+                    var option = document.createElement('option');
+                    option.value = valueFn(item);
+                    option.textContent = textFn(item);
+                    select.appendChild(option);
+                });
+            }
+
+            function specOptionText(it) {
+                var text = (it.Specification || '無規格') + ' - 現有 ' + it.Quantity + ' ' + (it.Unit || '');
+                text += it.ExpirationDate ? '（效期 ' + it.ExpirationDate + '）' : '（無期限）';
+                if (it.Warning) { text += ' ⚠' + it.Warning; }
+                return text;
+            }
+
+            function populateCategories(preselect) {
+                var categories = uniqueValues(candidateItems(), function (it) { return it.Category; });
+                fillSelect(categorySelect, categories, function (it) { return it.Category; }, function (it) { return it.Category; }, '請選擇物資種類');
+                if (preselect) { categorySelect.value = preselect; }
+            }
+
+            function populateItemNames(preselect) {
+                var category = categorySelect.value;
+                itemNameSelect.disabled = !category;
+                if (!category) {
+                    fillSelect(itemNameSelect, [], function () {}, function () {}, '請先選擇物資種類');
+                    populateSpecifications();
+                    return;
                 }
+                var names = uniqueValues(
+                    candidateItems().filter(function (it) { return it.Category === category; }),
+                    function (it) { return it.ItemName; }
+                );
+                fillSelect(itemNameSelect, names, function (it) { return it.ItemName; }, function (it) { return it.ItemName; }, '請選擇物資名稱');
+                if (preselect) { itemNameSelect.value = preselect; }
+                populateSpecifications();
+            }
+
+            function populateSpecifications(preselectId) {
+                var category = categorySelect.value;
+                var itemName = itemNameSelect.value;
+                specificationSelect.disabled = !(category && itemName);
+                if (!category || !itemName) {
+                    fillSelect(specificationSelect, [], function () {}, function () {}, '請先選擇物資名稱');
+                    resolveItem();
+                    return;
+                }
+                var matches = candidateItems().filter(function (it) { return it.Category === category && it.ItemName === itemName; });
+                fillSelect(specificationSelect, matches, function (it) { return it.Id; }, specOptionText, '請選擇規格／批次');
+                if (preselectId) {
+                    specificationSelect.value = preselectId;
+                } else if (matches.length === 1) {
+                    specificationSelect.value = matches[0].Id;
+                }
+                resolveItem();
+            }
+
+            function resolveItem() {
+                var id = specificationSelect.value;
+                var item = items.find(function (it) { return String(it.Id) === String(id); });
+                hiddenItemId.value = item ? item.Id : '';
+                itemError.style.display = 'none';
+
+                if (!item) {
+                    preview.style.display = 'none';
+                    return;
+                }
+
+                preview.style.display = '';
+                if (item.ImagePath) {
+                    previewImg.src = item.ImagePath;
+                    previewImg.style.display = '';
+                    previewNoImg.style.display = 'none';
+                } else {
+                    previewImg.style.display = 'none';
+                    previewNoImg.style.display = '';
+                }
+                previewText.textContent = item.Category + '｜' + item.ItemName + '｜' + (item.Specification || '無規格');
+                previewWarning.textContent = item.Warning ? '⚠ ' + item.Warning : '';
+            }
+
+            function onFilterChanged() {
+                populateCategories();
+                populateItemNames();
             }
 
             if (locationInput && locationInput.tagName === 'SELECT') {
-                locationInput.addEventListener('change', filterItems);
+                locationInput.addEventListener('change', onFilterChanged);
             }
             stockTypeInputs.forEach(function (input) {
-                input.addEventListener('change', filterItems);
+                input.addEventListener('change', onFilterChanged);
+            });
+            categorySelect.addEventListener('change', function () { populateItemNames(); });
+            itemNameSelect.addEventListener('change', function () { populateSpecifications(); });
+            specificationSelect.addEventListener('change', resolveItem);
+
+            document.querySelector('form').addEventListener('submit', function (e) {
+                if (!hiddenItemId.value) {
+                    e.preventDefault();
+                    itemError.style.display = '';
+                    categorySelect.focus();
+                }
             });
 
-            filterItems();
+            // Restore the previous selection - either from the "選擇出庫" quick-link
+            // (supplyItemId query string, surfaced via Model.SupplyItemId) or after a failed
+            // submit - so the 分類/物資種類/物資名稱/規格 don't have to be re-picked from scratch.
+            var selectedId = @(Model.SupplyItemId > 0 ? Model.SupplyItemId.ToString() : "null");
+            var selectedItem = selectedId ? items.find(function (it) { return String(it.Id) === String(selectedId); }) : null;
+            if (selectedItem) {
+                var radio = document.querySelector('input[name="stockTypeFilter"][value="' + selectedItem.StockType + '"]');
+                if (radio) { radio.checked = true; }
+            }
+
+            populateCategories(selectedItem ? selectedItem.Category : null);
+            populateItemNames(selectedItem ? selectedItem.ItemName : null);
+            populateSpecifications(selectedItem ? selectedItem.Id : null);
         })();
     </script>
 }

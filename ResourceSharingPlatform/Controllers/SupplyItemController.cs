@@ -270,7 +270,7 @@ namespace ResourceSharingPlatform.Controllers
 
                     if (imageFile != null && imageFile.Length > 0 && string.IsNullOrEmpty(existingMatch.ImagePath))
                     {
-                        existingMatch.ImagePath = await SaveImageAsync(imageFile);
+                        existingMatch.ImagePath = await SaveImageAsync(imageFile, existingMatch);
                     }
 
                     await _context.SaveChangesAsync();
@@ -280,7 +280,7 @@ namespace ResourceSharingPlatform.Controllers
 
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    item.ImagePath = await SaveImageAsync(imageFile);
+                    item.ImagePath = await SaveImageAsync(imageFile, item);
                 }
 
                 item.IsActive = true;
@@ -379,7 +379,7 @@ namespace ResourceSharingPlatform.Controllers
                     if (imageFile != null && imageFile.Length > 0)
                     {
                         DeleteImageIfExists(existing?.ImagePath);
-                        item.ImagePath = await SaveImageAsync(imageFile);
+                        item.ImagePath = await SaveImageAsync(imageFile, item);
                     }
 
                     item.UpdatedAt = DateTime.Now;
@@ -473,12 +473,28 @@ namespace ResourceSharingPlatform.Controllers
             return true;
         }
 
-        private async Task<string> SaveImageAsync(IFormFile file)
+        // Naming rule: 物資種類-物資名稱-規格-數量-日期-流水號 (Category-ItemName-Specification-
+        // Quantity-Date-SequenceNumber), e.g. "食品-飲用水-600ml-250-20260809-001.png". The
+        // sequence number scans the target folder for existing files sharing the same prefix
+        // (same item/qty/day) and picks the next one, so re-uploading for the same item on the
+        // same day never collides. Free-text fields (Category/ItemName/Specification) are
+        // sanitized since they can contain characters Windows won't allow in a filename.
+        private async Task<string> SaveImageAsync(IFormFile file, SupplyItem item)
         {
             var uploadsFolder = _uploadPathProvider.GetSubfolder("items");
-
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var fileName = Guid.NewGuid().ToString("N") + ext;
+
+            var prefix = string.Join("-", new[]
+            {
+                SanitizeForFileName(item.Category),
+                SanitizeForFileName(item.ItemName),
+                SanitizeForFileName(string.IsNullOrWhiteSpace(item.Specification) ? "無規格" : item.Specification),
+                item.Quantity.ToString(),
+                DateTime.Now.ToString("yyyyMMdd")
+            }.Where(part => !string.IsNullOrEmpty(part)));
+
+            var sequence = NextSequence(uploadsFolder, prefix, ext);
+            var fileName = $"{prefix}-{sequence:000}{ext}";
             var filePath = Path.Combine(uploadsFolder, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -487,6 +503,44 @@ namespace ResourceSharingPlatform.Controllers
             }
 
             return "/uploads/items/" + fileName;
+        }
+
+        private static string SanitizeForFileName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var chars = value.Trim().ToCharArray();
+            var invalid = Path.GetInvalidFileNameChars();
+            for (var i = 0; i < chars.Length; i++)
+            {
+                if (invalid.Contains(chars[i]) || chars[i] == '-')
+                {
+                    chars[i] = '_';
+                }
+            }
+
+            return new string(chars);
+        }
+
+        private static int NextSequence(string folder, string prefix, string ext)
+        {
+            var searchPattern = prefix + "-*" + ext;
+            var existing = Directory.GetFiles(folder, searchPattern);
+            var max = 0;
+            foreach (var path in existing)
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                var lastDash = name.LastIndexOf('-');
+                if (lastDash >= 0 && int.TryParse(name[(lastDash + 1)..], out var n) && n > max)
+                {
+                    max = n;
+                }
+            }
+
+            return max + 1;
         }
 
         private void DeleteImageIfExists(string? relativePath)

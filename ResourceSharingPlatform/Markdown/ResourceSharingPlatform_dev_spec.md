@@ -122,10 +122,11 @@ GROUP BY Category, ItemName
 
 - 允許 jpg、jpeg、png、webp。
 - 單檔上限 5 MB。
-- 檔名使用 GUID。
-- 一般圖片：`wwwroot/uploads/items`
-- AI 圖片：`wwwroot/uploads/ai-stockin`
-- SQL 只保存相對路徑。
+- 實際存放路徑由 `appsettings.json` 的 `UploadsRoot`（`Services/UploadPathProvider.cs`）決定，未設定時退回 `wwwroot/uploads`；一律以 `/uploads/...` 這個相對路徑對外提供，SQL 也只保存這個相對路徑。
+  - 一般物資圖片子資料夾：`items`
+  - AI 智慧入庫圖片子資料夾：`ai-stockin`
+- **一般物資圖片命名規則**（`SupplyItemController.SaveImageAsync`）：`物資種類-物資名稱-規格-數量-日期-流水號`，例如 `食品-飲用水-600ml-250-20260809-001.png`。自由文字欄位（種類/名稱/規格）會先過濾掉 Windows 檔名不允許的字元；流水號從同前綴的既有檔案中找最大值+1，避免同一天同一物資重複上傳互相覆蓋。
+  - AI 智慧入庫的輸入照片（拍照上傳當下還不知道正確品項）維持 GUID 命名，不套用這個規則。
 
 ## 9. 權限與資料範圍
 
