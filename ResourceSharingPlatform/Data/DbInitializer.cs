@@ -330,5 +330,151 @@ namespace ResourceSharingPlatform.Data
 
             await context.SaveChangesAsync();
         }
+
+        // Seeds the 物資種類目錄 the user supplied on 2026-08-10 (物資品項.xlsx, 39 物資名稱／54 規格
+        // across 食品／生鮮冷凍食品／日用品／輔具). Idempotent and additive only:
+        //   - A definition (Category+ItemName) is only INSERTed if that combination doesn't
+        //     already exist (IsActive=1) - if it already exists (e.g. 食品/水 was already present
+        //     from earlier test data with Unit=瓶/StockType=Frozen), its Unit/StockType is left
+        //     untouched rather than silently overwritten with this preset's values, since we don't
+        //     know whether real SupplyItem stock already depends on the existing definition.
+        //   - A variant (Specification) is only INSERTed under whichever definition Id actually
+        //     ended up existing (pre-existing or freshly inserted) if that spec isn't already there.
+        // "無" is stored as a literal specification value (not NULL) for items without a
+        // specification, per the user's explicit instruction, rather than the NULL-plus-"無規格"-
+        // display convention used elsewhere (e.g. SupplyItem.Specification).
+        // Two item names were split out of the source spreadsheet because their variants used
+        // different minimum units, which this schema can't express within one definition
+        // (Unit lives on InventoryItemDefinition, not InventoryItemVariant): 泡麵 -> 泡麵(袋裝)/
+        // 泡麵(碗裝), 雞蛋 -> 雞蛋(盒裝)/雞蛋(箱裝). One duplicate source row (水 - 300ML／箱, listed
+        // twice) was collapsed to one.
+        public static async Task SeedPresetInventoryCatalogAsync(IServiceProvider services)
+        {
+            using var scope = services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            await context.Database.ExecuteSqlRawAsync("""
+                DECLARE @NewDefinitions TABLE (Category NVARCHAR(50), ItemName NVARCHAR(100), Unit NVARCHAR(20), StockType NVARCHAR(20));
+                INSERT INTO @NewDefinitions (Category, ItemName, Unit, StockType) VALUES
+                (N'食品', N'米', N'包', N'HasExpiry'),
+                (N'食品', N'水', N'箱', N'HasExpiry'),
+                (N'食品', N'米酒', N'瓶', N'HasExpiry'),
+                (N'食品', N'食用油', N'瓶', N'HasExpiry'),
+                (N'食品', N'醬油', N'瓶', N'HasExpiry'),
+                (N'食品', N'飲料', N'鋁箔包', N'HasExpiry'),
+                (N'食品', N'罐頭', N'罐', N'HasExpiry'),
+                (N'食品', N'綠豆', N'包', N'HasExpiry'),
+                (N'食品', N'鹽巴', N'包', N'HasExpiry'),
+                (N'食品', N'冬粉', N'包', N'HasExpiry'),
+                (N'食品', N'米粉', N'包', N'HasExpiry'),
+                (N'食品', N'麵條', N'包', N'HasExpiry'),
+                (N'食品', N'泡麵(袋裝)', N'包', N'HasExpiry'),
+                (N'食品', N'泡麵(碗裝)', N'碗', N'HasExpiry'),
+                (N'生鮮冷凍食品', N'蔬菜', N'箱', N'Frozen'),
+                (N'生鮮冷凍食品', N'豬肉', N'包', N'Frozen'),
+                (N'生鮮冷凍食品', N'牛肉', N'包', N'Frozen'),
+                (N'生鮮冷凍食品', N'雞肉', N'包', N'Frozen'),
+                (N'生鮮冷凍食品', N'雞蛋(盒裝)', N'盒', N'HasExpiry'),
+                (N'生鮮冷凍食品', N'雞蛋(箱裝)', N'箱', N'HasExpiry'),
+                (N'生鮮冷凍食品', N'甜點類', N'包', N'Frozen'),
+                (N'生鮮冷凍食品', N'湯類', N'包', N'Frozen'),
+                (N'生鮮冷凍食品', N'沖泡類', N'包', N'HasExpiry'),
+                (N'生鮮冷凍食品', N'麵包類', N'個', N'Frozen'),
+                (N'日用品', N'成人紙尿布', N'包', N'NoExpiry'),
+                (N'日用品', N'尿布墊', N'包', N'NoExpiry'),
+                (N'日用品', N'棉被', N'條', N'NoExpiry'),
+                (N'日用品', N'毯子', N'條', N'NoExpiry'),
+                (N'日用品', N'床墊', N'座', N'NoExpiry'),
+                (N'輔具', N'一般輪椅', N'台', N'NoExpiry'),
+                (N'輔具', N'鐵製輪椅', N'台', N'NoExpiry'),
+                (N'輔具', N'輕便輪椅', N'台', N'NoExpiry'),
+                (N'輔具', N'高背輪椅', N'台', N'NoExpiry'),
+                (N'輔具', N'便盆椅', N'座', N'NoExpiry'),
+                (N'輔具', N'氣墊床', N'床', N'NoExpiry'),
+                (N'輔具', N'電動床', N'座', N'NoExpiry'),
+                (N'輔具', N'單拐', N'隻', N'NoExpiry'),
+                (N'輔具', N'雙枴', N'隻', N'NoExpiry'),
+                (N'輔具', N'四腳拐', N'組', N'NoExpiry');
+
+                INSERT INTO InventoryItemDefinition (Category, ItemName, Unit, GlobalSafetyStock, IsActive, CreatedAt, StockType)
+                SELECT nd.Category, nd.ItemName, nd.Unit, 0, 1, GETDATE(), nd.StockType
+                FROM @NewDefinitions nd
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM InventoryItemDefinition d
+                    WHERE d.Category = nd.Category AND d.ItemName = nd.ItemName AND d.IsActive = 1
+                );
+                """);
+
+            await context.Database.ExecuteSqlRawAsync("""
+                DECLARE @NewVariants TABLE (Category NVARCHAR(50), ItemName NVARCHAR(100), Specification NVARCHAR(200));
+                INSERT INTO @NewVariants (Category, ItemName, Specification) VALUES
+                (N'食品', N'米', N'1公斤'),
+                (N'食品', N'米', N'3公斤'),
+                (N'食品', N'米', N'5公斤'),
+                (N'食品', N'米', N'30公斤'),
+                (N'食品', N'水', N'300ML'),
+                (N'食品', N'水', N'600ML'),
+                (N'食品', N'米酒', N'600ML'),
+                (N'食品', N'食用油', N'600ML'),
+                (N'食品', N'醬油', N'600ML'),
+                (N'食品', N'飲料', N'300ML'),
+                (N'食品', N'飲料', N'600ML'),
+                (N'食品', N'飲料', N'975ML'),
+                (N'食品', N'罐頭', N'八寶粥類'),
+                (N'食品', N'罐頭', N'魚類'),
+                (N'食品', N'罐頭', N'醬瓜類'),
+                (N'食品', N'綠豆', N'無'),
+                (N'食品', N'鹽巴', N'無'),
+                (N'食品', N'冬粉', N'無'),
+                (N'食品', N'米粉', N'無'),
+                (N'食品', N'麵條', N'無'),
+                (N'食品', N'泡麵(袋裝)', N'無'),
+                (N'食品', N'泡麵(碗裝)', N'無'),
+                (N'生鮮冷凍食品', N'蔬菜', N'無'),
+                (N'生鮮冷凍食品', N'豬肉', N'無'),
+                (N'生鮮冷凍食品', N'牛肉', N'無'),
+                (N'生鮮冷凍食品', N'雞肉', N'無'),
+                (N'生鮮冷凍食品', N'雞蛋(盒裝)', N'12入'),
+                (N'生鮮冷凍食品', N'雞蛋(箱裝)', N'無'),
+                (N'生鮮冷凍食品', N'甜點類', N'無'),
+                (N'生鮮冷凍食品', N'湯類', N'無'),
+                (N'生鮮冷凍食品', N'沖泡類', N'無'),
+                (N'生鮮冷凍食品', N'麵包類', N'無'),
+                (N'日用品', N'成人紙尿布', N'S'),
+                (N'日用品', N'成人紙尿布', N'M'),
+                (N'日用品', N'成人紙尿布', N'L'),
+                (N'日用品', N'成人紙尿布', N'XL'),
+                (N'日用品', N'尿布墊', N'S'),
+                (N'日用品', N'尿布墊', N'M'),
+                (N'日用品', N'尿布墊', N'L'),
+                (N'日用品', N'尿布墊', N'XL'),
+                (N'日用品', N'棉被', N'無'),
+                (N'日用品', N'毯子', N'無'),
+                (N'日用品', N'床墊', N'單人'),
+                (N'日用品', N'床墊', N'雙人'),
+                (N'輔具', N'一般輪椅', N'無'),
+                (N'輔具', N'鐵製輪椅', N'無'),
+                (N'輔具', N'輕便輪椅', N'無'),
+                (N'輔具', N'高背輪椅', N'無'),
+                (N'輔具', N'便盆椅', N'無'),
+                (N'輔具', N'氣墊床', N'無'),
+                (N'輔具', N'電動床', N'無'),
+                (N'輔具', N'單拐', N'無'),
+                (N'輔具', N'雙枴', N'無'),
+                (N'輔具', N'四腳拐', N'無');
+
+                INSERT INTO InventoryItemVariant (InventoryItemDefinitionId, Specification, IsActive, CreatedAt)
+                SELECT d.Id, nv.Specification, 1, GETDATE()
+                FROM @NewVariants nv
+                INNER JOIN InventoryItemDefinition d
+                    ON d.Category = nv.Category AND d.ItemName = nv.ItemName AND d.IsActive = 1
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM InventoryItemVariant v
+                    WHERE v.InventoryItemDefinitionId = d.Id
+                      AND (v.Specification = nv.Specification OR (v.Specification IS NULL AND nv.Specification IS NULL))
+                      AND v.IsActive = 1
+                );
+                """);
+        }
     }
 }

@@ -78,6 +78,7 @@ app.MapControllerRoute(
 
 await DbInitializer.EnsureInventoryCatalogTablesAsync(app.Services);
 await DbInitializer.BackfillInventoryDefinitionsFromSupplyItemsAsync(app.Services);
+await DbInitializer.SeedPresetInventoryCatalogAsync(app.Services);
 await DbInitializer.EnsureInventoryItemDefinitionStockTypeAsync(app.Services);
 await DbInitializer.SeedAdminAsync(app.Services);
 await DbInitializer.MergeDuplicateItemsAsync(app.Services);
