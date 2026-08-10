@@ -76,6 +76,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
+await DbInitializer.SeedPresetLocationsAsync(app.Services);
 await DbInitializer.EnsureInventoryCatalogTablesAsync(app.Services);
 await DbInitializer.BackfillInventoryDefinitionsFromSupplyItemsAsync(app.Services);
 await DbInitializer.SeedPresetInventoryCatalogAsync(app.Services);

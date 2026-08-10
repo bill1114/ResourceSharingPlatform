@@ -476,5 +476,50 @@ namespace ResourceSharingPlatform.Data
                 );
                 """);
         }
+
+        // Seeds the 8 real 雲林縣智障者福利協進會 service centers the user pasted on 2026-08-10
+        // (from https://www.yunfull.org.tw/OnePage.aspx?mid=20), so this data ships with the app
+        // the same way SeedPresetInventoryCatalogAsync does - it re-applies on every startup and
+        // on a fresh database, not just this machine's current copy.
+        // Only LocationName/Address/Phone are seeded: the source page also had per-center Email
+        // and a short service description, but SupplyLocation has no matching columns for those
+        // today and the user chose not to add them for this pass - that richer info is not
+        // stored anywhere and would need to be pulled from the source page again if wanted later.
+        // Idempotent: a location is only inserted if no row with that exact LocationName exists
+        // yet (regardless of IsActive, so re-activating one by hand isn't undone here).
+        // Also deactivates (never deletes) the 4 placeholder test locations seeded during earlier
+        // development (第一/第二/第三/第四物資據點, fake 05-0000001-style phone numbers) now that
+        // real location data exists - existing SupplyItem/UserAccount rows that already reference
+        // them by LocationId keep working untouched, they just stop appearing in "選擇據點" pickers.
+        public static async Task SeedPresetLocationsAsync(IServiceProvider services)
+        {
+            using var scope = services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            await context.Database.ExecuteSqlRawAsync("""
+                DECLARE @NewLocations TABLE (LocationName NVARCHAR(200), Address NVARCHAR(400), Phone NVARCHAR(60));
+                INSERT INTO @NewLocations (LocationName, Address, Phone) VALUES
+                (N'行政中心', N'雲林縣斗六市府文路30號', N'05-5341940'),
+                (N'圓夢庇護工場', N'雲林縣斗六市保長路504號', N'05-5345467'),
+                (N'雲林縣身心障礙者服務中心-斗六區', N'雲林縣斗六市府文路22號4樓', N'05-5362103'),
+                (N'心歡喜日照中心', N'雲林縣斗六市南京路373號1樓', N'05-5372781'),
+                (N'西螺服務據點', N'雲林縣西螺鎮光復西路286號', N'05-5873733'),
+                (N'東勢服務中心', N'雲林縣東勢鄉東北村東勢東路395號', N'05-6993809'),
+                (N'心圓寶日照中心', N'雲林縣北港鎮新街里穎寧街72號', N'05-7825113'),
+                (N'北港服務中心', N'雲林縣北港鎮新街里新東街33巷8之3號', N'05-7827433');
+
+                INSERT INTO SupplyLocation (LocationName, Address, Phone, IsActive, CreatedAt)
+                SELECT nl.LocationName, nl.Address, nl.Phone, 1, GETDATE()
+                FROM @NewLocations nl
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM SupplyLocation sl WHERE sl.LocationName = nl.LocationName
+                );
+
+                UPDATE SupplyLocation
+                SET IsActive = 0, UpdatedAt = GETDATE()
+                WHERE LocationName IN (N'第一物資據點', N'第二物資據點', N'第三物資據點', N'第四物資據點')
+                  AND IsActive = 1;
+                """);
+        }
     }
 }
