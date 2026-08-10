@@ -481,12 +481,23 @@ namespace ResourceSharingPlatform.Data
         // (from https://www.yunfull.org.tw/OnePage.aspx?mid=20), so this data ships with the app
         // the same way SeedPresetInventoryCatalogAsync does - it re-applies on every startup and
         // on a fresh database, not just this machine's current copy.
-        // Only LocationName/Address/Phone are seeded: the source page also had per-center Email
-        // and a short service description, but SupplyLocation has no matching columns for those
-        // today and the user chose not to add them for this pass - that richer info is not
-        // stored anywhere and would need to be pulled from the source page again if wanted later.
+        // Only LocationName/Address/Phone/Latitude/Longitude are seeded: the source page also had
+        // per-center Email and a short service description, but SupplyLocation has no matching
+        // columns for those today and the user chose not to add them for this pass - that richer
+        // info is not stored anywhere and would need to be pulled from the source page again if
+        // wanted later.
+        // Coordinates were geocoded from each address via Nominatim/OpenStreetMap on 2026-08-10.
+        // Nominatim's Taiwan coverage does not resolve exact house numbers for these addresses, so
+        // each coordinate is the matched *road*'s location (斗六市's 府文路/保長路/南京路, 西螺鎮's
+        // 光復西路, 東勢鄉's 東勢東路, 北港鎮's 穎寧街/新東街) - accurate enough to place a marker in
+        // the right block for the 據點地圖 feature, but can be off from the exact building by up to
+        // a few hundred metres. 行政中心 and 雲林縣身心障礙者服務中心-斗六區 share a coordinate because
+        // they're both on 府文路 in 斗六市 and Nominatim only resolved the street, not the two
+        // different house numbers.
         // Idempotent: a location is only inserted if no row with that exact LocationName exists
-        // yet (regardless of IsActive, so re-activating one by hand isn't undone here).
+        // yet (regardless of IsActive, so re-activating one by hand isn't undone here). The
+        // coordinate UPDATE only ever touches rows where Latitude IS NULL, so it never overwrites
+        // a coordinate an admin has since edited by hand (manual edits can't revert to NULL).
         // Also deactivates (never deletes) the 4 placeholder test locations seeded during earlier
         // development (第一/第二/第三/第四物資據點, fake 05-0000001-style phone numbers) now that
         // real location data exists - existing SupplyItem/UserAccount rows that already reference
@@ -497,23 +508,29 @@ namespace ResourceSharingPlatform.Data
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             await context.Database.ExecuteSqlRawAsync("""
-                DECLARE @NewLocations TABLE (LocationName NVARCHAR(200), Address NVARCHAR(400), Phone NVARCHAR(60));
-                INSERT INTO @NewLocations (LocationName, Address, Phone) VALUES
-                (N'行政中心', N'雲林縣斗六市府文路30號', N'05-5341940'),
-                (N'圓夢庇護工場', N'雲林縣斗六市保長路504號', N'05-5345467'),
-                (N'雲林縣身心障礙者服務中心-斗六區', N'雲林縣斗六市府文路22號4樓', N'05-5362103'),
-                (N'心歡喜日照中心', N'雲林縣斗六市南京路373號1樓', N'05-5372781'),
-                (N'西螺服務據點', N'雲林縣西螺鎮光復西路286號', N'05-5873733'),
-                (N'東勢服務中心', N'雲林縣東勢鄉東北村東勢東路395號', N'05-6993809'),
-                (N'心圓寶日照中心', N'雲林縣北港鎮新街里穎寧街72號', N'05-7825113'),
-                (N'北港服務中心', N'雲林縣北港鎮新街里新東街33巷8之3號', N'05-7827433');
+                DECLARE @NewLocations TABLE (LocationName NVARCHAR(200), Address NVARCHAR(400), Phone NVARCHAR(60), Latitude DECIMAL(10,7), Longitude DECIMAL(10,7));
+                INSERT INTO @NewLocations (LocationName, Address, Phone, Latitude, Longitude) VALUES
+                (N'行政中心', N'雲林縣斗六市府文路30號', N'05-5341940', 23.6960101, 120.5278435),
+                (N'圓夢庇護工場', N'雲林縣斗六市保長路504號', N'05-5345467', 23.7059203, 120.5189915),
+                (N'雲林縣身心障礙者服務中心-斗六區', N'雲林縣斗六市府文路22號4樓', N'05-5362103', 23.6960101, 120.5278435),
+                (N'心歡喜日照中心', N'雲林縣斗六市南京路373號1樓', N'05-5372781', 23.7138970, 120.5393339),
+                (N'西螺服務據點', N'雲林縣西螺鎮光復西路286號', N'05-5873733', 23.7966480, 120.4594180),
+                (N'東勢服務中心', N'雲林縣東勢鄉東北村東勢東路395號', N'05-6993809', 23.6758407, 120.2618627),
+                (N'心圓寶日照中心', N'雲林縣北港鎮新街里穎寧街72號', N'05-7825113', 23.5788243, 120.2964091),
+                (N'北港服務中心', N'雲林縣北港鎮新街里新東街33巷8之3號', N'05-7827433', 23.5853932, 120.3010845);
 
-                INSERT INTO SupplyLocation (LocationName, Address, Phone, IsActive, CreatedAt)
-                SELECT nl.LocationName, nl.Address, nl.Phone, 1, GETDATE()
+                INSERT INTO SupplyLocation (LocationName, Address, Phone, Latitude, Longitude, IsActive, CreatedAt)
+                SELECT nl.LocationName, nl.Address, nl.Phone, nl.Latitude, nl.Longitude, 1, GETDATE()
                 FROM @NewLocations nl
                 WHERE NOT EXISTS (
                     SELECT 1 FROM SupplyLocation sl WHERE sl.LocationName = nl.LocationName
                 );
+
+                UPDATE sl
+                SET sl.Latitude = nl.Latitude, sl.Longitude = nl.Longitude, sl.UpdatedAt = GETDATE()
+                FROM SupplyLocation sl
+                INNER JOIN @NewLocations nl ON nl.LocationName = sl.LocationName
+                WHERE sl.Latitude IS NULL;
 
                 UPDATE SupplyLocation
                 SET IsActive = 0, UpdatedAt = GETDATE()
