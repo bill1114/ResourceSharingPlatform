@@ -11,9 +11,11 @@ obj/
 ResourceSharingPlatform/wwwroot/uploads/
 /Pictures/
 
-# Build/publish output and DB backups (regenerated, not source)
+# Build/publish output and DB backups (regenerated, not source; also contains
+# sensitive data - hashed credentials, operational records - never commit)
 /publish/
 /Backups/
+*.bak
 
 # Logs / temp
 *.log
