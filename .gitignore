@@ -9,6 +9,11 @@ obj/
 
 # Runtime uploads (user-generated data, not source)
 ResourceSharingPlatform/wwwroot/uploads/
+/Pictures/
+
+# Build/publish output and DB backups (regenerated, not source)
+/publish/
+/Backups/
 
 # Logs / temp
 *.log
