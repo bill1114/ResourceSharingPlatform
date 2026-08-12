@@ -75,4 +75,4 @@
 - [ ] 備份 `wwwroot/uploads`
 - [ ] 更換預設密碼與敏感設定
 - [ ] 決定正式環境圖片持久化路徑
-- [ ] 驗證 IIS 或 Windows Service 部署方式
+- [x] 驗證 IIS 或 Windows Service 部署方式（2026-08-12：排查並修好 500.30 啟動失敗（SQL 登入權限），完成對外開放設定，詳見 [IISDeployment.md](IISDeployment.md)）

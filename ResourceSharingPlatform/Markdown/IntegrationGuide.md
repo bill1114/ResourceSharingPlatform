@@ -2,7 +2,7 @@
 
 給要跟本系統串接資料的工程師看的獨立文件。目的是讓你不用讀過整個 repo 也能知道：資料庫長什麼樣子、怎麼連、資料代表什麼意思、有哪些坑要注意。
 
-最後更新：2026-08-09（對應 repo tag [v1.9.0](https://github.com/bill1114/ResourceSharingPlatform/releases/tag/v1.9.0)）
+最後更新：2026-08-12(部署站台資訊已依實際狀態更正,詳見 [IISDeployment.md](IISDeployment.md);原對應 repo tag [v1.9.0](https://github.com/bill1114/ResourceSharingPlatform/releases/tag/v1.9.0))
 
 ---
 
@@ -11,7 +11,7 @@
 - ASP.NET Core MVC（.NET 8）+ Entity Framework Core 8 + SQL Server，Razor 伺服器端渲染，**沒有 REST/JSON API**——目前唯一能串接資料的方式是**直接連 SQL Server 資料庫**（見第 2 節）。
 - 兩套並存的部署，共用同一個資料庫：
   - 開發用 Kestrel：`http://localhost:5140`（`Start.bat`/`Stop.bat` 啟停）
-  - IIS 正式站：`http://localhost:8081`（App Pool `ResourceSharingPlatformPool`）
+  - IIS 正式站：`http://192.168.0.151:5000`（App Pool `ResourceSharingPlatform`），2026-08-12 起已對外開放，外部網址 `http://122.117.44.214:5000/`（詳見 [IISDeployment.md](IISDeployment.md)，公網 IP 可能是動態的）
 - 認證方式：Cookie Authentication，帳號密碼存在 `UserAccount` 表（雜湊過，非明文）。沒有 API Token/OAuth 機制。
 - 資料庫名稱：`LocalSupplyDB`，SQL Server Express。
 
@@ -19,14 +19,14 @@
 
 | 項目 | 值 |
 |---|---|
-| SQL Server 執行個體 | `LAPTOP-FMFDKESG\SQLEXPRESS`（機器目前的網路主機名稱其實是 `1524-86N2`，跟 `@@SERVERNAME` 顯示的不一樣，是先前改過電腦名稱留下的） |
+| SQL Server 執行個體 | `USER\SQLEXPRESS`（2026-08-12 確認；機器名稱先前改過好幾次，若又不一樣了，以 `SELECT @@SERVERNAME` 查到的實際值為準） |
 | 資料庫 | `LocalSupplyDB` |
 | 認證方式 | Windows 整合驗證（`Trusted_Connection=True`），本機應用程式使用的連線字串：`Server=.;Database=LocalSupplyDB;Trusted_Connection=True;TrustServerCertificate=True;` |
 | SQL Server 版本 | Express Edition，15.0.2160.4（SQL Server 2019） |
 
 **目前的限制，串接前務必先確認清楚：**
 
-- SQL Server 的 TCP/IP 雖然有開（監聽 1433），但 **Windows 防火牆沒有對應的放行規則**，實際上外部機器連不進來。這是刻意維持本機限定的狀態（比照 [IISDeployment.md](IISDeployment.md) 的原則：目前不對外/對區網開放）。
+- SQL Server 的 TCP/IP 雖然有開（監聽 1433），但 **Windows 防火牆沒有對應的放行規則**，實際上外部機器連不進來，這點目前仍維持刻意限制本機的狀態——**不要跟網站本身混為一談**：網站（IIS 站台）2026-08-12 起已對外開放（見 [IISDeployment.md](IISDeployment.md)），但資料庫本身並沒有跟著對外開放，兩者是分開的防火牆規則。
 - `SQLBrowser` 服務也是停用的，所以就算防火牆開了，用執行個體名稱（`主機\SQLEXPRESS`）連線也不會自動解析，得直接指定連接埠 `1433`。
 - 如果另一位工程師需要**從別台機器**直接連這個資料庫，需要額外做：開防火牆規則、視情況啟用 SQL 登入驗證（目前只有 Windows 整合驗證，且這台機器不在網域，遠端機器很可能沒有對應的 Windows 帳號可用）、以及評估這樣做的資安風險。**這些改動本身有風險，需要跟我明確討論後才會進行**，這份文件先假設對方是透過匯出/複本資料庫，或在同一台機器上開發來串接。
 - 比較安全、建議的替代方案：

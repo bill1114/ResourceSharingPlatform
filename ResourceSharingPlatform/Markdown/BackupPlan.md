@@ -50,14 +50,14 @@ Start-ScheduledTask -TaskName "ResourceSharingPlatform-Backup"
 
 ```powershell
 # 1. 先停用 App Pool／關閉 Kestrel，避免還原時有連線占用資料庫
-Stop-WebAppPool -Name ResourceSharingPlatformPool
+Stop-WebAppPool -Name ResourceSharingPlatform
 # 開發用 Kestrel 用 Stop.bat 關閉
 
 # 2. 還原（WITH REPLACE 會覆蓋現有資料庫，還原前務必確認檔名與時間點正確）
 sqlcmd -S . -E -Q "RESTORE DATABASE LocalSupplyDB FROM DISK = 'D:\ResourceSharingPlatform\Backups\LocalSupplyDB_20260809_020000.bak' WITH REPLACE"
 
 # 3. 重啟服務
-Start-WebAppPool -Name ResourceSharingPlatformPool
+Start-WebAppPool -Name ResourceSharingPlatform
 ```
 
 ### 還原圖片
